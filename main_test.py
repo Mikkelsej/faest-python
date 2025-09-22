@@ -13,34 +13,37 @@ class TestExtensionField:
             for i in range(2**d):
                 bitDec = self.field.BitDec(i, d)
                 numRec = self.field.NumRec(d, bitDec)
-                print(bitDec, numRec)
                 assert numRec == i
     
     def test_add(self):
-        a = [1, 1, 1]
-        b = [1, 1, 1]
-        assert self.field.add(a, b) == [0, 0, 0]
-        a =  [0, 0, 1]
-        b = [1, 1, 0]
-        assert self.field.add(a,b) == [1, 1, 1]
+        a = 0b111   # 7
+        b = 0b111   # 7
+        assert self.field.add(a, b) == 0
+        a = 0b100   # 4
+        b = 0b011   # 3
+        assert self.field.add(a, b) == 0b111   # 7
 
     def test_mul_in_gf3(self):
         tempField = ExtensionField(3)
-        a = [1, 0, 1]
-        b = [1, 1, 1]
-        assert tempField.mul(a,b) == [0,1,1]
+        a = 0b101   # x^2 + 1
+        b = 0b111   # x^2 + x + 1
+        result = tempField.mul(a, b)
+        # Expected: 0b110 = x^2 + x
+        assert result == 0b110
     
     def test_mul_in_gf8(self):
-        a = self.field.BitDec(0x53, 8)
-        b = self.field.BitDec(0xCA, 8)
-        assert self.field.mul(a,b) == [1]
+        a = 0x53
+        b = 0xCA
+        result = self.field.mul(a, b)
+        # Expected is 1
+        assert result == 1
 
     def test_inverse(self):
-        a = self.field.BitDec(0x53, 8)
+        a = 0x53
         inv_a = self.field.inv(a)
         
-        assert self.field.NumRec(8, inv_a) == 0xCA
+        assert inv_a == 0xCA
 
         product = self.field.mul(a, inv_a)
-
-        assert product == [1]
+        # Multiplicative identity is 1
+        assert product == 1
