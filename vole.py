@@ -1,23 +1,43 @@
 from prover import Prover
 from verifier import Verifier
-from main import ExtensionField
+from extensionfield import ExtensionField
+import random
+
 
 class Vole:
-  def __init__(self, m) -> None:
-    self.field = ExtensionField(m)
-    self.p = Prover(self.field)
-    self.v = Verifier(self.field)
-    self.shared_secret()
+    def __init__(self, m: int, length: int) -> None:
+        self.field: ExtensionField = ExtensionField(m)
+        self.length: int = length
+        self.prover: Prover = Prover(self.field, 1000)
+        self.verifier: Verifier = Verifier(self.field)
 
-  def shared_secret(self):
-    self.qs = [(vi+ui*delta) % 2 for (vi,ui,delta) in zip(self.p.v, self.p.u, self.v.delta)]
+    def initialValues(self, prover: Prover, verifier: Verifier):
+        u = [random.randint(0, 1) for _ in range(self.length)]
+        prover.setU(u)
 
-  def commit(self, w):
-    ui = self.p.u[0]
-    vi = self.p.v[0]
-    
-    di = ui ^ vi
+        v = [self.field.getRandom() for _ in range(self.length)]
+        prover.setV(v)
 
-    qi = (self.qs[0] + di*self.v.delta[0]) % 2
+        delta = self.field.getRandom()
+        verifier.setDelta(delta)
 
-    
+        q = [vi + ui * delta for (vi, ui) in zip(v, u)]
+        verifier.setQ(q)
+
+    def commit(self, w):
+        ui = self.prover.u[0]
+        vi = self.prover.v[0]
+
+        di = ui ^ vi
+
+        qi = (self.qs[0] + di * self.verifier.delta) % 2
+
+    def open(self, u, v):
+        pass
+
+
+vole = Vole(8, 1000)
+
+print(vole.prover.v)
+print(vole.prover.u)
+print(vole.verifier.delta)

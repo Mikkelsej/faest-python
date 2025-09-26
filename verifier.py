@@ -1,7 +1,26 @@
-import random
-from main import ExtensionField
+from extensionfield import ExtensionField
+
 
 class Verifier:
-  def __init__(self, field: ExtensionField) -> None:
-    self.field = field
-    self.delta = self.field.elements[random.randint(0, 256)]
+    def __init__(self, field: ExtensionField) -> None:
+        self.field: ExtensionField = field
+        self.delta: int
+        self.q: list[int]
+        self.index: int = 0
+
+
+def setDelta(self, delta: int) -> None:
+    self.delta = delta
+
+
+def setQ(self, q: list[int]) -> None:
+    self.q = q
+
+
+def commit(self, di: int) -> None:
+    i: int = self.index
+    qi: int = self.q[i] + di * self.delta
+    self.q[i] = qi
+
+    # Increase index for next vi, ui
+    self.index += 1

@@ -1,7 +1,8 @@
 from itertools import product
+import random
+
 
 class ExtensionField:
-
 
     _irreducible = {
         3: 0b1011,
@@ -15,7 +16,6 @@ class ExtensionField:
         if not m in [3, 8, 64, 128, 192, 256, 384, 576, 768]:
             raise Exception(f"m must be one of {[8, 64, 128, 192, 256, 384, 576, 768]}")
         self.irrPoly = self._irreducible[self.m]
-        self.elements = [list(bits) for bits in product([0, 1], repeat=self.m)]
 
     def add(self, a: int, b: int) -> int:
         return a ^ b
@@ -59,3 +59,7 @@ class ExtensionField:
         for j in range(d):
             result += b[j] * 2**j
         return result
+
+    def getRandom(self):
+        return random.randint(0, 2 ** (self.m) - 1)
+
