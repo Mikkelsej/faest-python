@@ -1,4 +1,3 @@
-from itertools import product
 import random
 
 
@@ -47,14 +46,14 @@ class ExtensionField:
             n >>= 1
         return result
 
-    def BitDec(self, i, d):
+    def BitDec(self, i: int, d: int):
         b = [0] * (d)
         for j in range(d):
             b[j] = i % 2
             i = (i - b[j]) // 2
         return b
 
-    def NumRec(self, d, b):
+    def NumRec(self, d: int, b: list[int]):
         result = 0
         for j in range(d):
             result += b[j] * 2**j

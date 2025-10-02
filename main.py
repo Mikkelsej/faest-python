@@ -1,8 +1,5 @@
-from extensionfield import ExtensionField
-
-
 def main():
-    field = ExtensionField(8)
+    pass
 
 
 if __name__ == "__main__":

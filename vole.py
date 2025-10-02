@@ -10,30 +10,40 @@ class Vole:
         self.length: int = length
         self.prover: Prover = Prover(self.field, 1000)
         self.verifier: Verifier = Verifier(self.field)
+        self.initialValues(self.prover, self.verifier)
 
     def initialValues(self, prover: Prover, verifier: Verifier):
+        # Sets u as {0,1}^l
         u = [random.randint(0, 1) for _ in range(self.length)]
         prover.setU(u)
 
+        # Sets v as {x}^l, where x\in F_{2^\lambda}
         v = [self.field.getRandom() for _ in range(self.length)]
         prover.setV(v)
 
+        # Sets delta as x, where x\in F_{2^\lambda}
         delta = self.field.getRandom()
         verifier.setDelta(delta)
 
+
+        # Sets q as {q_i = v_i + u_i \cdot delta} for i \in l
         q = [vi + ui * delta for (vi, ui) in zip(v, u)]
         verifier.setQ(q)
 
-    def commit(self, w):
-        ui = self.prover.u[0]
-        vi = self.prover.v[0]
+    def commit(self, w: list[int], index: int):
+        ui: int = self.prover.u[index]
+        #vi: int = self.prover.v[index]
+        wi: int = w[index]
 
-        di = ui ^ vi
+        di: int = ui ^ wi
 
-        qi = (self.qs[0] + di * self.verifier.delta) % 2
+        qi: int = (self.verifier.q[index] + di * self.verifier.delta)
 
-    def open(self, u, v):
-        pass
+        self.verifier.q[index] = qi
+        
+    def open(self, wi: int, vi: int, index: int):
+        qi = vi+wi*self.verifier.delta
+        self.verifier.check(qi, index)
 
 
 vole = Vole(8, 1000)

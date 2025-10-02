@@ -1,10 +1,10 @@
-import pytest
-from main import ExtensionField
-
+from extensionfield import ExtensionField
+from vole import Vole
 
 class TestExtensionField:
     def setup_method(self):
         self.field = ExtensionField(8)
+        self.vole = Vole(8, 1000)
 
     def teardown_method(self):
         pass
@@ -48,3 +48,26 @@ class TestExtensionField:
         product = self.field.mul(a, inv_a)
         # Multiplicative identity is 1
         assert product == 1
+
+    def test_vole(self):
+        for _ in range(1000):
+            vole: Vole = Vole(8, 1000)
+            self.verifier_delta(vole)
+            self.prover_v(vole)
+            self.prover_u(vole)
+
+    def verifier_delta(self, vole: Vole):
+        delta: int = vole.verifier.delta
+        assert 0 <= delta <= 255
+
+    def prover_v(self, vole: Vole):
+        v: list[int] = vole.prover.v
+        for vi in v:
+            assert 0 <= vi <= 255
+
+    def prover_u(self, vole: Vole):
+        u: list[int] = vole.prover.u
+        for ui in u:
+            assert 0 == ui or ui == 1
+
+    
