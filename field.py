@@ -63,25 +63,3 @@ class ExtensionField:
     
     def getRandomBit(self) -> int:
         return random.randint(0, 1)
-    
-    def add_vectors(self, a: list[int], b: list[int]) -> list[int]:
-        """Add two vectors of field elements element-wise"""
-        return [self.add(ai, bi) for ai, bi in zip(a, b)]
-    
-    def sub_vectors(self, a: list[int], b: list[int]) -> list[int]:
-        """Subtract two vectors of field elements element-wise"""
-        return [self.sub(ai, bi) for ai, bi in zip(a, b)]
-    
-    def mul_scalar(self, vector: list[int], scalar: int) -> list[int]:
-        """Multiply a vector by a scalar field element"""
-        return [self.mul(vi, scalar) for vi in vector]
-    
-    def mul_vectors(self, a: list[int], b: list[int]) -> list[int]:
-        """Multiply two vectors of field elements element-wise"""
-        return [self.mul(ai, bi) for ai, bi in zip(a, b)]
-    
-    def xor_vectors(self, a: list[int], b: list[int]) -> list[int]:
-        """XOR two vectors of field elements element-wise (same as add for GF(2^m))"""
-        return [self.add(ai, bi) for ai, bi in zip(a, b)]
-    
-
