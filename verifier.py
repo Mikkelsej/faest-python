@@ -1,12 +1,14 @@
-from extensionfield import ExtensionField
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from vole import Vole
 
 class Verifier:
-    def __init__(self, field: ExtensionField) -> None:
-        self.field: ExtensionField = field
+    def __init__(self, vole: 'Vole') -> None:
+        self.vole = vole
+        self.field = vole.field
         self.delta: int
         self.q: list[int]
-        self.index: int = 0
+        vole.initializeVerifier(self)
 
 
     def setDelta(self, delta: int) -> None:
@@ -17,18 +19,17 @@ class Verifier:
         self.q = q
 
 
-    def commit(self, di: int) -> None:
-        i: int = self.index
-        qi: int = self.q[i] + di * self.delta
+    def updateQ(self, index: int, di: int):
+        i: int = index
+        qi: int = self.field.add(self.q[i], self.field.mul(di, self.delta))
         self.q[i] = qi
-
-        # Increase index for next vi, ui
-        self.index += 1
     
-    def check(self, qi: int, index: int) -> bool:
+    def check(self, wi: int, vi: int, index: int) -> bool:
         original_qi: int = self.q[index]
         
-        if original_qi == qi:
+        new_qi = self.field.add(vi, self.field.mul(wi, self.delta))
+
+        if original_qi == new_qi:
             return True
 
         return False

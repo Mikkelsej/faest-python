@@ -1,53 +1,45 @@
+from field import ExtensionField
 from prover import Prover
 from verifier import Verifier
-from extensionfield import ExtensionField
-import random
 
 
 class Vole:
-    def __init__(self, m: int, length: int) -> None:
-        self.field: ExtensionField = ExtensionField(m)
+    def __init__(self, field: ExtensionField, length: int) -> None:
+        self.field: ExtensionField = field
         self.length: int = length
-        self.prover: Prover = Prover(self.field, 1000)
-        self.verifier: Verifier = Verifier(self.field)
-        self.initialValues(self.prover, self.verifier)
+        self.u: list[int]
+        self.v: list[int]
+        self.delta: int
+        self.q: list[int]
 
-    def initialValues(self, prover: Prover, verifier: Verifier):
+
+    def initializeProver(self, prover: Prover):
         # Sets u as {0,1}^l
-        u = [random.randint(0, 1) for _ in range(self.length)]
-        prover.setU(u)
+        self.u = [self.field.getRandomBit() for _ in range(self.length)]
+        prover.setU(self.u)
 
         # Sets v as {x}^l, where x\in F_{2^\lambda}
-        v = [self.field.getRandom() for _ in range(self.length)]
-        prover.setV(v)
+        self.v = [self.field.getRandom() for _ in range(self.length)]
+        prover.setV(self.v)
 
+    def initializeVerifier(self, verifier: Verifier):
         # Sets delta as x, where x\in F_{2^\lambda}
-        delta = self.field.getRandom()
-        verifier.setDelta(delta)
+        self.delta = self.field.getRandom()
+        verifier.setDelta(self.delta)
 
 
         # Sets q as {q_i = v_i + u_i \cdot delta} for i \in l
-        q = [vi + ui * delta for (vi, ui) in zip(v, u)]
-        verifier.setQ(q)
+        self.q = [self.field.add(vi, self.field.mul(ui, self.delta)) for (vi, ui) in zip(self.v, self.u)]
+        verifier.setQ(self.q)
 
-    def commit(self, w: list[int], index: int):
-        ui: int = self.prover.u[index]
-        #vi: int = self.prover.v[index]
-        wi: int = w[index]
-
-        di: int = ui ^ wi
-
-        qi: int = (self.verifier.q[index] + di * self.verifier.delta)
-
-        self.verifier.q[index] = qi
-        
-    def open(self, wi: int, vi: int, index: int):
-        qi = vi+wi*self.verifier.delta
-        self.verifier.check(qi, index)
+    def commit(self, index: int, di: int):
+        qi: int = self.field.add(self.q[index], di * self.delta)
+        self.q[index] = qi
 
 
-vole = Vole(8, 1000)
-
-print(vole.prover.v)
-print(vole.prover.u)
-print(vole.verifier.delta)
+if __name__ == "__main__":
+    length: int = 1000
+    field: ExtensionField = ExtensionField(8)
+    vole = Vole(field, 1000)
+    alice: Prover = Prover(vole)
+    bob: Verifier= Verifier(vole)

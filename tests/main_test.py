@@ -1,12 +1,23 @@
-from extensionfield import ExtensionField
+import sys
+import os
+import unittest
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from field import ExtensionField
 from vole import Vole
+from prover import Prover
+from verifier import Verifier
 
-class TestExtensionField:
-    def setup_method(self):
+
+class TestExtensionField(unittest.TestCase):
+    def setUp(self):
         self.field = ExtensionField(8)
-        self.vole = Vole(8, 1000)
+        self.vole = Vole(self.field, 1000)
+        alice = Prover(self.vole)
+        bob = Verifier(self.vole)
 
-    def teardown_method(self):
+    def tearDown(self):
         pass
 
     def test_bitRec_numDec(self):
@@ -51,23 +62,30 @@ class TestExtensionField:
 
     def test_vole(self):
         for _ in range(1000):
-            vole: Vole = Vole(8, 1000)
-            self.verifier_delta(vole)
-            self.prover_v(vole)
-            self.prover_u(vole)
+            vole: Vole = Vole(self.field, 1000)
+            alice = Prover(vole)
+            bob = Verifier(vole)
+            self.verifier_delta(bob)
+            self.verifier_q(bob)
+            self.prover_v(alice)
+            self.prover_u(alice)
 
-    def verifier_delta(self, vole: Vole):
-        delta: int = vole.verifier.delta
+    def verifier_delta(self, verifier: Verifier):
+        delta: int = verifier.delta
         assert 0 <= delta <= 255
 
-    def prover_v(self, vole: Vole):
-        v: list[int] = vole.prover.v
+    def verifier_q(self, verifier: Verifier):
+        q: list[int] = verifier.q
+        for qi in q:
+            assert 0 <= qi <= 255
+
+
+    def prover_v(self, prover: Prover):
+        v: list[int] = prover.v
         for vi in v:
             assert 0 <= vi <= 255
 
-    def prover_u(self, vole: Vole):
-        u: list[int] = vole.prover.u
+    def prover_u(self, prover: Prover):
+        u: list[int] = prover.u
         for ui in u:
             assert 0 == ui or ui == 1
-
-    
