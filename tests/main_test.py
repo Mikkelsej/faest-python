@@ -69,6 +69,7 @@ class TestExtensionField(unittest.TestCase):
             self.verifier_q(bob)
             self.prover_v(alice)
             self.prover_u(alice)
+            self.vole_add(alice, bob)
 
     def verifier_delta(self, verifier: Verifier):
         delta: int = verifier.delta
@@ -89,3 +90,15 @@ class TestExtensionField(unittest.TestCase):
         u: list[int] = prover.u
         for ui in u:
             assert 0 == ui or ui == 1
+
+    def vole_add(self, prover: Prover, verifier: Verifier):
+        u: list[int] = prover.u
+        v: list[int] = prover.v
+        q: list[int] = verifier.q
+        delta: int = verifier.delta
+        index: int = 0
+        vPrime, uPrime = prover.add(u[index], u[index+1], v[index], v[index+1])
+        
+        qPrime = verifier.add(q[index], q[index+1])
+
+        assert qPrime == self.field.add(vPrime, uPrime*delta)

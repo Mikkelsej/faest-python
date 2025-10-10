@@ -33,3 +33,6 @@ class Verifier:
             return True
 
         return False
+
+    def add(self, q0: int, q1: int):
+        return self.field.add(q0, q1)
