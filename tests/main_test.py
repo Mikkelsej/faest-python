@@ -96,9 +96,10 @@ class TestExtensionField(unittest.TestCase):
         v: list[int] = prover.v
         q: list[int] = verifier.q
         delta: int = verifier.delta
-        index: int = 0
-        vPrime, uPrime = prover.add(u[index], u[index+1], v[index], v[index+1])
-        
-        qPrime = verifier.add(q[index], q[index+1])
 
-        assert qPrime == self.field.add(vPrime, uPrime*delta)
+        for index in range(len(u)-1):
+            v_prime, u_prime = prover.add(v[index], v[index+1], u[index], u[index+1])
+            
+            q_prime = verifier.add(q[index], q[index+1])
+
+            assert q_prime == self.field.add(v_prime, u_prime*delta)

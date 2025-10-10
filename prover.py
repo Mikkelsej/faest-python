@@ -37,5 +37,7 @@ class Prover:
     def open(self, wi: int, vi: int, index: int):
         return wi, vi, index
     
-    def add(self, u0: int, u1: int, v0: int, v1: int):
+    def add(self, v0: int, v1: int, u0: int, u1: int):
         return self.field.add(v0, v1), self.field.add(u0, u1)
+    
+    
