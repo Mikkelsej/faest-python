@@ -70,6 +70,7 @@ class TestExtensionField(unittest.TestCase):
             self.prover_v(alice)
             self.prover_u(alice)
             self.vole_add(alice, bob)
+            self.vole_mul(alice, bob)
 
     def verifier_delta(self, verifier: Verifier):
         delta: int = verifier.delta
@@ -103,3 +104,15 @@ class TestExtensionField(unittest.TestCase):
             q_prime = verifier.add(q[index], q[index+1])
 
             assert q_prime == self.field.add(v_prime, u_prime*delta)
+
+    def vole_mul(self, prover: Prover, verifier: Verifier):
+        u: list[int] = prover.u
+        v: list[int] = prover.v
+        q: list[int] = verifier.q
+
+        for index in range(len(u)-2):
+            if self.field.mul(u[index], u[index+1]) == u[index+2]:    
+                d, e = prover.mul(v[index], v[index+1], v[index+2], u[index], u[index+1])
+
+                assert verifier.check_mul(q[index], q[index+1], q[index+2], d, e)
+

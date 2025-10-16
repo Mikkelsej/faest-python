@@ -12,7 +12,6 @@ class Vole:
         self.delta: int
         self.q: list[int]
 
-
     def initializeProver(self, prover: Prover):
         # Sets u as {0,1}^l
         self.u = [self.field.getRandomBit() for _ in range(self.length)]
@@ -27,9 +26,11 @@ class Vole:
         self.delta = self.field.getRandom()
         verifier.setDelta(self.delta)
 
-
         # Sets q as {q_i = v_i + u_i \cdot delta} for i \in l
-        self.q = [self.field.add(vi, self.field.mul(ui, self.delta)) for (vi, ui) in zip(self.v, self.u)]
+        self.q = [
+            self.field.add(vi, self.field.mul(ui, self.delta))
+            for (vi, ui) in zip(self.v, self.u)
+        ]
         verifier.setQ(self.q)
 
     def commit(self, index: int, di: int):
@@ -42,4 +43,4 @@ if __name__ == "__main__":
     field: ExtensionField = ExtensionField(8)
     vole = Vole(field, 1000)
     alice: Prover = Prover(vole)
-    bob: Verifier= Verifier(vole)
+    bob: Verifier = Verifier(vole)

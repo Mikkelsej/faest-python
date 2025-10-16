@@ -10,9 +10,9 @@ def main():
     """Does main stuff"""
     length: int = 1000
     field: ExtensionField = ExtensionField(8)
-    
+
     vole: Vole = Vole(field, length)
-    
+
     alice: Prover = Prover(vole)
     bob: Verifier = Verifier(vole)
 
@@ -21,7 +21,6 @@ def main():
 
     wi, vi, i = alice.open(1, 0, 4)
     bob.check(wi, vi, i)
-
 
 
 if __name__ == "__main__":

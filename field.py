@@ -1,5 +1,6 @@
 import random
 
+
 class ExtensionField:
 
     _irreducible = {
@@ -60,6 +61,6 @@ class ExtensionField:
 
     def getRandom(self) -> int:
         return random.randint(0, 2 ** (self.m) - 1)
-    
+
     def getRandomBit(self) -> int:
         return random.randint(0, 1)
