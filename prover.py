@@ -16,12 +16,12 @@ class Prover:
 
         self.index: int = 0
 
-        vole.initializeProver(self)
+        vole.initialize_prover(self)
 
-    def setU(self, u: list[int]) -> None:
+    def set_u(self, u: list[int]) -> None:
         self.u = u
 
-    def setV(self, v: list[int]) -> None:
+    def set_v(self, v: list[int]) -> None:
         self.v = v
 
     def commit(self, w: list[int]) -> tuple[int, int]:
@@ -33,13 +33,13 @@ class Prover:
 
         return i, di
 
-    def open(self, wi: int, vi: int, index: int):
+    def open(self, wi: int, vi: int, index: int) -> tuple[int, int, int]:
         return wi, vi, index
 
-    def add(self, v0: int, v1: int, u0: int, u1: int):
+    def add(self, v0: int, v1: int, u0: int, u1: int) -> tuple[int, int]:
         return self.field.add(v0, v1), self.field.add(u0, u1)
 
-    def mul(self, v0: int, v1: int, v2: int, u0: int, u1: int):
+    def mul(self, v0: int, v1: int, v2: int, u0: int, u1: int) -> tuple[int, int]:
         d: int = self.field.sub(
             self.field.add(self.field.mul(v0, u1), self.field.mul(v1, u0)), v2
         )

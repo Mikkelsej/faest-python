@@ -6,7 +6,7 @@ from verifier import Verifier
 from vole import Vole
 
 
-def main():
+def main() -> None:
     """Does main stuff"""
     length: int = 1000
     field: ExtensionField = ExtensionField(8)
@@ -17,7 +17,7 @@ def main():
     bob: Verifier = Verifier(vole)
 
     i, di = alice.commit([1, 0, 1])
-    bob.updateQ(i, di)
+    bob.update_q(i, di)
 
     wi, vi, i = alice.open(1, 0, 4)
     bob.check(wi, vi, i)

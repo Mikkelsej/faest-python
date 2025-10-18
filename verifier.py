@@ -10,15 +10,15 @@ class Verifier:
         self.field = vole.field
         self.delta: int
         self.q: list[int]
-        vole.initializeVerifier(self)
+        vole.initialize_verifier(self)
 
-    def setDelta(self, delta: int) -> None:
+    def set_delta(self, delta: int) -> None:
         self.delta = delta
 
-    def setQ(self, q: list[int]) -> None:
+    def set_q(self, q: list[int]) -> None:
         self.q = q
 
-    def updateQ(self, index: int, di: int):
+    def update_q(self, index: int, di: int) -> None:
         i: int = index
         qi: int = self.field.add(self.q[i], self.field.mul(di, self.delta))
         self.q[i] = qi
@@ -33,10 +33,10 @@ class Verifier:
 
         return False
 
-    def add(self, q0: int, q1: int):
+    def add(self, q0: int, q1: int) -> int:
         return self.field.add(q0, q1)
 
-    def check_mul(self, q0: int, q1: int, q2: int, d: int, e: int):
+    def check_mul(self, q0: int, q1: int, q2: int, d: int, e: int) -> bool:
         delta: int = self.delta
 
         lhs: int = self.field.sub(self.field.mul(q0, q1), self.field.mul(delta, q2))
