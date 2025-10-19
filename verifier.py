@@ -33,8 +33,8 @@ class Verifier:
 
         return False
 
-    def add(self, q0: int, q1: int) -> int:
-        return self.field.add(q0, q1)
+    def add(self, a: int, b: int) -> int:
+        return self.field.add(self.q[a], self.q[b])
 
     def check_mul(self, a: int, b: int, c: int, d: int, e: int) -> bool:
         delta: int = self.delta

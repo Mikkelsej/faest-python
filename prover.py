@@ -36,8 +36,10 @@ class Prover:
     def open(self, wi: int, vi: int, index: int) -> tuple[int, int, int]:
         return wi, vi, index
 
-    def add(self, v0: int, v1: int, u0: int, u1: int) -> tuple[int, int]:
-        return self.field.add(v0, v1), self.field.add(u0, u1)
+    def add(self, a: int, b: int) -> tuple[int, int]:
+        return self.field.add(self.v[a], self.v[b]), self.field.add(
+            self.u[a], self.u[b]
+        )
 
     def mul(self, a: int, b: int, c: int) -> tuple[int, int]:
 

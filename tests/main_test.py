@@ -92,12 +92,11 @@ class TestExtensionField:
         q: list[int] = verifier.q
         delta: int = verifier.delta
 
-        for index in range(len(u) - 1):
-            v_prime, u_prime = prover.add(
-                v[index], v[index + 1], u[index], u[index + 1]
-            )
+        for index_a in range(len(u) - 1):
+            index_b: int = index_a + 1
+            v_prime, u_prime = prover.add(index_a, index_b)
 
-            q_prime = verifier.add(q[index], q[index + 1])
+            q_prime = verifier.add(index_a, index_b)
 
             assert q_prime == self.field.add(v_prime, u_prime * delta)
 
