@@ -39,10 +39,27 @@ class Prover:
     def add(self, v0: int, v1: int, u0: int, u1: int) -> tuple[int, int]:
         return self.field.add(v0, v1), self.field.add(u0, u1)
 
-    def mul(self, v0: int, v1: int, v2: int, u0: int, u1: int) -> tuple[int, int]:
+    def mul(self, a: int, b: int, c: int) -> tuple[int, int]:
+
         d: int = self.field.sub(
-            self.field.add(self.field.mul(v0, u1), self.field.mul(v1, u0)), v2
+            self.field.add(
+                self.field.mul(self.v[a], self.u[b]),
+                self.field.mul(self.v[b], self.u[a]),
+            ),
+            self.v[c],
         )
-        e: int = self.field.mul(v0, v1)
+        e: int = self.field.mul(self.v[a], self.v[b])
 
         return d, e
+
+    def mul_commit(self, a: int, b: int):
+        c: int = self.index
+        self.index += 1
+
+        uc: int = self.field.mul(self.u[a], self.u[b])
+
+        correction: int = self.field.sub(uc, self.u[c])
+
+        self.u[c] = uc
+
+        return c, correction

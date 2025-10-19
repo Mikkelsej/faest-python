@@ -1,6 +1,6 @@
 import sys
 import os
-import unittest
+import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -10,15 +10,10 @@ from prover import Prover
 from verifier import Verifier
 
 
-class TestExtensionField(unittest.TestCase):
-    def setUp(self) -> None:
+class TestExtensionField:
+    @pytest.fixture(autouse=True)
+    def setup(self) -> None:
         self.field = ExtensionField(8)
-        self.vole = Vole(self.field, 1000)
-        alice = Prover(self.vole)
-        bob = Verifier(self.vole)
-
-    def tearDown(self) -> None:
-        pass
 
     def test_bitRec_numDec(self) -> None:
         for d in range(5):
@@ -60,17 +55,17 @@ class TestExtensionField(unittest.TestCase):
         # Multiplicative identity is 1
         assert product == 1
 
-    def test_vole(self) -> None:
-        for _ in range(1000):
-            vole: Vole = Vole(self.field, 1000)
-            alice = Prover(vole)
-            bob = Verifier(vole)
-            self.verifier_delta(bob)
-            self.verifier_q(bob)
-            self.prover_v(alice)
-            self.prover_u(alice)
-            self.vole_add(alice, bob)
-            self.vole_mul(alice, bob)
+    @pytest.mark.parametrize("iteration", range(1000))
+    def test_vole(self, iteration: int) -> None:
+        vole: Vole = Vole(self.field, 1000)
+        alice = Prover(vole)
+        bob = Verifier(vole)
+        self.verifier_delta(bob)
+        self.verifier_q(bob)
+        self.prover_v(alice)
+        self.prover_u(alice)
+        self.vole_add(alice, bob)
+        self.vole_mul(alice, bob)
 
     def verifier_delta(self, verifier: Verifier) -> None:
         delta: int = verifier.delta
@@ -80,7 +75,6 @@ class TestExtensionField(unittest.TestCase):
         q: list[int] = verifier.q
         for qi in q:
             assert 0 <= qi <= 255
-
 
     def prover_v(self, prover: Prover) -> None:
         v: list[int] = prover.v
@@ -98,21 +92,22 @@ class TestExtensionField(unittest.TestCase):
         q: list[int] = verifier.q
         delta: int = verifier.delta
 
-        for index in range(len(u)-1):
-            v_prime, u_prime = prover.add(v[index], v[index+1], u[index], u[index+1])
+        for index in range(len(u) - 1):
+            v_prime, u_prime = prover.add(
+                v[index], v[index + 1], u[index], u[index + 1]
+            )
 
-            q_prime = verifier.add(q[index], q[index+1])
+            q_prime = verifier.add(q[index], q[index + 1])
 
-            assert q_prime == self.field.add(v_prime, u_prime*delta)
+            assert q_prime == self.field.add(v_prime, u_prime * delta)
 
     def vole_mul(self, prover: Prover, verifier: Verifier) -> None:
-        u: list[int] = prover.u
-        v: list[int] = prover.v
-        q: list[int] = verifier.q
+        for index_a in range(len(prover.u) - 2):
+            index_b = index_a + 1
+            index_c, correction = prover.mul_commit(index_a, index_b)
 
-        for index in range(len(u)-2):
-            if self.field.mul(u[index], u[index+1]) == u[index+2]:
-                d, e = prover.mul(v[index], v[index+1], v[index+2], u[index], u[index+1])
+            verifier.update_q(index_c, correction)
 
-                assert verifier.check_mul(q[index], q[index+1], q[index+2], d, e)
+            d, e = prover.mul(index_a, index_b, index_c)
 
+            assert verifier.check_mul(index_a, index_b, index_c, d, e)

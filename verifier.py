@@ -36,10 +36,12 @@ class Verifier:
     def add(self, q0: int, q1: int) -> int:
         return self.field.add(q0, q1)
 
-    def check_mul(self, q0: int, q1: int, q2: int, d: int, e: int) -> bool:
+    def check_mul(self, a: int, b: int, c: int, d: int, e: int) -> bool:
         delta: int = self.delta
 
-        lhs: int = self.field.sub(self.field.mul(q0, q1), self.field.mul(delta, q2))
+        lhs: int = self.field.sub(
+            self.field.mul(self.q[a], self.q[b]), self.field.mul(delta, self.q[c])
+        )
 
         rhs: int = self.field.add(self.field.mul(d, delta), e)
 
