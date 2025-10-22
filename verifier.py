@@ -33,14 +33,14 @@ class Verifier:
 
         return False
 
-    def add(self, a: int, b: int) -> int:
-        return self.field.add(self.q[a], self.q[b])
+    def add(self, index_a: int, index_b: int) -> int:
+        return self.field.add(self.q[index_a], self.q[index_b])
 
-    def check_mul(self, a: int, b: int, c: int, d: int, e: int) -> bool:
+    def check_mul(self, index_a: int, index_b: int, index_c: int, d: int, e: int) -> bool:
         delta: int = self.delta
 
         lhs: int = self.field.sub(
-            self.field.mul(self.q[a], self.q[b]), self.field.mul(delta, self.q[c])
+            self.field.mul(self.q[index_a], self.q[index_b]), self.field.mul(delta, self.q[index_c])
         )
 
         rhs: int = self.field.add(self.field.mul(d, delta), e)

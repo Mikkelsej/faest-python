@@ -88,8 +88,6 @@ class TestExtensionField:
 
     def vole_add(self, prover: Prover, verifier: Verifier) -> None:
         u: list[int] = prover.u
-        v: list[int] = prover.v
-        q: list[int] = verifier.q
         delta: int = verifier.delta
 
         for index_a in range(len(u) - 1):
