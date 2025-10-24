@@ -16,11 +16,12 @@ def main() -> None:
     alice: Prover = Prover(vole)
     bob: Verifier = Verifier(vole)
 
-    i, di = alice.commit(1)
+    w = 1
+    i, di = alice.commit(w)
     bob.update_q(i, di)
 
-    wi, vi, i = alice.open(1, 0, 4)
-    bob.check(wi, vi, i)
+    wi, vi, i = alice.open(w, alice.v[0], 0)
+    print(bob.check(wi, vi, i))
 
 
 if __name__ == "__main__":
