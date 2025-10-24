@@ -1,124 +1,107 @@
-from vole import Vole
-from prover import Prover
-from verifier import Verifier
+"""Circuit builder and constraints for Sudoku over VOLE-backed arithmetic."""
 
 
 class Gate:
     """Represents a gate in the arithmetic circuit."""
-    def __init__(self, gate_type, inputs, output):
-        self.gate_type = gate_type  # 'ADD', 'MULT', 'CONST'
-        self.inputs = inputs  # list of Wire objects
-        self.output = output  # Wire object
+
+    def __init__(self, gate_type, inputs):
+        self.gate_type = gate_type
+        self.inputs: list[Wire] = inputs
+        self.output: Wire
 
     def evaluate(self):
         """Evaluate the gate based on input values."""
-        if self.gate_type == 'CONST':
-            return self.output.value
-        elif self.gate_type == 'ADD':
-            return sum(w.value for w in self.inputs)
-        elif self.gate_type == 'MULT':
+        self.output = Wire(0)
+        if self.gate_type == "add":
+            self.output.value = sum(input_wire.value for input_wire in self.inputs)
+        elif self.gate_type == "mul":
             result = 1
-            for w in self.inputs:
-                result *= w.value
-            return result
+            for input_wire in self.inputs:
+                result *= input_wire.value
+            self.output.value = result
         else:
-            raise ValueError(f"Unknown gate type: {self.gate_type}")
+            pass
+        return self.output.value
+
 
 class Wire:
     """Represents a wire carrying a value in the circuit."""
-    _id_counter = 0
 
-    def __init__(self, value=None, name=None):
-        self.value = value
-        self.name = name or f"w{Wire._id_counter}"
+    _id_counter = 1
+
+    def __init__(self, value: int):
+        self.value: int = value
+        self.name = f"wire_{Wire._id_counter}"
         self.id = Wire._id_counter
         Wire._id_counter += 1
+
 
 class CircuitBuilder:
     """Builds an arithmetic circuit for Sudoku verification."""
 
     def __init__(self):
-        self.gates = []
-        self.wires = []
-        self.constraints = []
+        self.gates: list[Gate] = []
+        self.wires: list[Wire] = []
+        self.constraints: list[bool] = []
 
-    def create_wire(self, value=None, name=None):
+    def create_wire(self, value):
         """Create a new wire in the circuit."""
-        wire = Wire(value, name)
+        wire = Wire(value)
         self.wires.append(wire)
         return wire
 
-    def add_gate(self, gate_type, inputs, output=None):
-        """Add a gate to the circuit."""
-        if output is None:
-            output = self.create_wire()
-        gate = Gate(gate_type, inputs, output)
+    def add_gate(self, gate_type, inputs):
+        """Add a new gate to the circuit."""
+        gate = Gate(gate_type, inputs)
         self.gates.append(gate)
-        return output
+        return gate
 
-    def add_constant(self, value):
-        """Add a constant wire to the circuit."""
-        wire = self.create_wire(value, f"const_{value}")
-        gate = Gate('CONST', [], wire)
-        self.gates.append(gate)
-        return wire
+    def add_constraint(self, constraint):
+        """Add a constraint to the circuit."""
+        self.constraints.append(constraint)
 
-    def check_range(self, wire, min_val=1, max_val=9):
-        """Add constraint: min_val <= wire.value <= max_val."""
-        self.constraints.append(('RANGE', wire, min_val, max_val))
 
-    def check_all_different(self, wires):
-        """Add constraint: all wires must have different values."""
-        self.constraints.append(('ALL_DIFF', wires))
+from sudoku_generator import SudokuGenerator
 
-    def build_sudoku_circuit(self, sudoku_grid):
-        """
-        Build circuit for 9x9 Sudoku verification.
-        sudoku_grid: 9x9 list of lists with values 1-9
-        """
-        # Create wires for all cells
-        cell_wires = []
+
+class SudokuCircuit(CircuitBuilder):
+    """Builds an arithmetic circuit for Sudoku verification."""
+
+    def __init__(self):
+        CircuitBuilder.__init__(self)
+        self.build_circuit()
+
+    def build_circuit(self):
+        sudoku_generator = SudokuGenerator(9)
+        solution = sudoku_generator.solution
+        for row in solution:
+            for value in row:
+                self.create_wire(value)
+
+        # Add addition gates for rows
         for i in range(9):
-            row = []
-            for j in range(9):
-                wire = self.create_wire(sudoku_grid[i][j], f"cell_{i}_{j}")
-                row.append(wire)
-                # Each cell must be in range [1, 9]
-                self.check_range(wire, 1, 9)
-            cell_wires.append(row)
+            row_wires = self.wires[i * 9 : (i + 1) * 9]
+            sum_gate = self.add_gate("add", row_wires)
+            self.add_constraint(sum_gate.evaluate() == 45)
 
-        # Check all rows have unique values
-        for i in range(9):
-            self.check_all_different(cell_wires[i])
-
-        # Check all columns have unique values
+        # Add addition gates for columns
         for j in range(9):
-            col = [cell_wires[i][j] for i in range(9)]
-            self.check_all_different(col)
+            col_wires = [self.wires[i * 9 + j] for i in range(9)]
+            sum_gate = self.add_gate("add", col_wires)
+            self.add_constraint(sum_gate.evaluate() == 45)
 
-        # Check all 3x3 boxes have unique values
+        # Add addition gates for 3x3 subgrids
         for box_row in range(3):
             for box_col in range(3):
-                box = []
+                box_wires = []
                 for i in range(3):
                     for j in range(3):
-                        box.append(cell_wires[box_row*3 + i][box_col*3 + j])
-                self.check_all_different(box)
+                        box_wires.append(
+                            self.wires[(box_row * 3 + i) * 9 + (box_col * 3 + j)]
+                        )
+                sum_gate = self.add_gate("add", box_wires)
+                self.add_constraint(sum_gate.evaluate() == 45)
+        print(self.constraints)
 
-        return cell_wires
 
-    def verify_constraints(self):
-        """Verify all constraints are satisfied."""
-        for constraint in self.constraints:
-            if constraint[0] == 'RANGE':
-                _, wire, min_val, max_val = constraint
-                if not (min_val <= wire.value <= max_val):
-                    return False, f"Range constraint failed for {wire.name}"
-
-            elif constraint[0] == 'ALL_DIFF':
-                _, wires = constraint
-                values = [w.value for w in wires]
-                if len(values) != len(set(values)):
-                    return False, f"All different constraint failed"
-
-        return True, "All constraints satisfied"
+SudokuCircuit()

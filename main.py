@@ -16,7 +16,7 @@ def main() -> None:
     alice: Prover = Prover(vole)
     bob: Verifier = Verifier(vole)
 
-    i, di = alice.commit([1, 0, 1])
+    i, di = alice.commit(1)
     bob.update_q(i, di)
 
     wi, vi, i = alice.open(1, 0, 4)

@@ -24,9 +24,9 @@ class Prover:
     def set_v(self, v: list[int]) -> None:
         self.v = v
 
-    def commit(self, w: list[int]) -> tuple[int, int]:
+    def commit(self, w: int) -> tuple[int, int]:
         i: int = self.index
-        di: int = self.field.add(self.u[i], w[i])
+        di: int = self.field.add(self.u[i], w)
 
         # Going to next unused ui and wi
         self.index += 1
