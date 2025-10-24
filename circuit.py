@@ -43,6 +43,7 @@ class CircuitBuilder:
         self.gates: list[Gate] = []
         self.wires: list[Wire] = []
         self.constraints: list[bool] = []
+        self.is_valid: bool = all(self.constraints)
 
     def create_wire(self, value):
         """Create a new wire in the circuit."""
@@ -101,7 +102,8 @@ class SudokuCircuit(CircuitBuilder):
                         )
                 sum_gate = self.add_gate("add", box_wires)
                 self.add_constraint(sum_gate.evaluate() == 45)
-        print(self.constraints)
+
+        print(self.is_valid)
 
 
 SudokuCircuit()
