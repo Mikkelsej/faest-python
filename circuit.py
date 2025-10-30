@@ -1,6 +1,9 @@
 """Circuit builder and constraints for Sudoku over VOLE-backed arithmetic."""
 
 
+from field import ExtensionField
+
+
 class Gate:
     """Represents a gate in the arithmetic circuit."""
 
@@ -8,16 +11,31 @@ class Gate:
         self.gate_type = gate_type
         self.inputs: list[Wire] = inputs
         self.output: Wire
+        self.field: ExtensionField = ExtensionField(8)
 
     def evaluate(self):
         """Evaluate the gate based on input values."""
         self.output = Wire(0)
         if self.gate_type == "add":
-            self.output.value = sum(input_wire.value for input_wire in self.inputs)
+            result = 0
+            for input_wire in self.inputs:
+                result = self.field.add(result, input_wire.value)
+            self.output.value = result
         elif self.gate_type == "mul":
             result = 1
             for input_wire in self.inputs:
-                result *= input_wire.value
+                result = self.field.mul(result, input_wire.value)
+            self.output.value = result
+        elif self.gate_type == "square":
+            result = 1
+            for input_wire in self.inputs:
+                result = self.field.mul(input_wire.value, input_wire.value)
+            self.output.value = result
+        elif self.gate_type == "cube":
+            result = 1
+            for input_wire in self.inputs:
+                square = self.field.mul(input_wire.value, input_wire.value)
+                result = self.field.mul(square, input_wire.value)
             self.output.value = result
         else:
             pass
@@ -41,14 +59,14 @@ class CircuitBuilder:
 
     def __init__(self):
         self.gates: list[Gate] = []
-        self.wires: list[Wire] = []
+        self.wires: list[list[Wire]] = [[] for _ in range(9)]
         self.constraints: list[bool] = []
         self.is_valid: bool = all(self.constraints)
 
-    def create_wire(self, value):
+    def create_wire(self, value, row: int):
         """Create a new wire in the circuit."""
         wire = Wire(value)
-        self.wires.append(wire)
+        self.wires[row].append(wire)
         return wire
 
     def add_gate(self, gate_type, inputs):
@@ -60,50 +78,3 @@ class CircuitBuilder:
     def add_constraint(self, constraint):
         """Add a constraint to the circuit."""
         self.constraints.append(constraint)
-
-
-from sudoku_generator import SudokuGenerator
-
-
-class SudokuCircuit(CircuitBuilder):
-    """Builds an arithmetic circuit for Sudoku verification."""
-
-    def __init__(self):
-        CircuitBuilder.__init__(self)
-        self.build_circuit()
-
-    def build_circuit(self):
-        sudoku_generator = SudokuGenerator(9)
-        solution = sudoku_generator.solution
-        for row in solution:
-            for value in row:
-                self.create_wire(value)
-
-        # Add addition gates for rows
-        for i in range(9):
-            row_wires = self.wires[i * 9 : (i + 1) * 9]
-            sum_gate = self.add_gate("add", row_wires)
-            self.add_constraint(sum_gate.evaluate() == 45)
-
-        # Add addition gates for columns
-        for j in range(9):
-            col_wires = [self.wires[i * 9 + j] for i in range(9)]
-            sum_gate = self.add_gate("add", col_wires)
-            self.add_constraint(sum_gate.evaluate() == 45)
-
-        # Add addition gates for 3x3 subgrids
-        for box_row in range(3):
-            for box_col in range(3):
-                box_wires = []
-                for i in range(3):
-                    for j in range(3):
-                        box_wires.append(
-                            self.wires[(box_row * 3 + i) * 9 + (box_col * 3 + j)]
-                        )
-                sum_gate = self.add_gate("add", box_wires)
-                self.add_constraint(sum_gate.evaluate() == 45)
-
-        print(self.is_valid)
-
-
-SudokuCircuit()

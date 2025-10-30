@@ -9,7 +9,7 @@ class SudokuGenerator:
         self.board = [[0 for _ in range(size)] for _ in range(size)]
         self.generate()
         self.solution = [row[:] for row in self.board]
-        self.puzzle = self.remove_numbers(35)
+        self.part_sudoku = self.remove_numbers(40)
 
     def generate(self):
         """Generate a complete Sudoku board."""
@@ -61,7 +61,7 @@ class SudokuGenerator:
 
 
 generator = SudokuGenerator()
-puzzle = generator.puzzle
+puzzle = generator.part_sudoku
 solution = generator.solution
 
 
