@@ -64,7 +64,7 @@ class CircuitBuilder:
         self.constraints: list[bool] = []
         self.is_valid: bool = all(self.constraints)
 
-    def create_wire(self, value, value: int, i: int, j: int):
+    def create_wire(self, value: int, i: int, j: int):
         """Create a new wire in the circuit."""
         wire = Wire(value)
         self.wires[i][j] = wire

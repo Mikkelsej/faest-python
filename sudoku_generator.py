@@ -60,19 +60,9 @@ class SudokuGenerator:
         return self.board
 
 
-generator = SudokuGenerator()
-part_sudoku = generator.part_sudoku
-solved_sudoku = generator.solution
-
 
 if __name__ == "__main__":
     # use module-level generator when running as script
-    valid_list = []
-    for i, row in enumerate(part_sudoku):
-        for j, value in enumerate(row):
-            if value != 0:
-                solved_value = solved_sudoku[i][j]
-                valid = solved_value == value
-                valid_list.append(valid)
-                print(f"part sudoku: {value}, solved sudoku: {solved_value}, equal = {valid}")
-    print(f"Valid: {all(valid_list)}")
+    generator = SudokuGenerator()
+    part_sudoku = generator.part_sudoku
+    solved_sudoku = generator.solution

@@ -18,11 +18,12 @@ class SudokuCircuit(CircuitBuilder):
         self.verifier = verifier
         self.vole = vole
         self.build_circuit()
-        self.input_sudoku: list[list[int]] = [[0 for _ in range(9)] for _ in range(9)]
+        self.input_sudoku: list[list[Wire]] = [[Wire(0) for _ in range(9)] for _ in range(9)]
 
     def create_wire(self, bits: list[int], i: int, j: int):
-        value = self.vole.field.num_rec(4, bits)
-        self.input_sudoku[i][j] = value
+        value = self.vole.field.num_rec(self.vole.field.m, bits)
+        wire = Wire(value)
+        self.input_sudoku[i][j] = wire
 
     def get_column_wires(self, col_index: int) -> list[Wire]:
         """Extract all wires from a specific column.
@@ -33,11 +34,7 @@ class SudokuCircuit(CircuitBuilder):
         Returns:
             List of wires in the specified column
         """
-        column_wires = []
-        for row in self.wires:
-            if col_index < len(row):
-                column_wires.append(row[col_index])
-        return column_wires
+        return [self.input_sudoku[i][col_index] for i in range(9)]
 
     def get_box_wires(self, box_index: int) -> list[Wire]:
         """Extract all wires from a specific 3x3 box.
@@ -55,14 +52,13 @@ class SudokuCircuit(CircuitBuilder):
         """
         box_row = (box_index // 3) * 3
         box_col = (box_index % 3) * 3
-        box_wires = []
 
+        box_wires = []
         for i in range(3):
             for j in range(3):
                 row_idx = box_row + i
                 col_idx = box_col + j
-                if row_idx < len(self.wires) and col_idx < len(self.wires[row_idx]):
-                    box_wires.append(self.wires[row_idx][col_idx])
+                box_wires.append(self.input_sudoku[row_idx][col_idx])
 
         return box_wires
 
@@ -89,14 +85,21 @@ if __name__ == "__main__":
 
     for i, row in enumerate(solved_sudoku):
         for j, value in enumerate(row):
-            bits = field.bit_dec(value, 4)
+            bits = field.bit_dec(value, vole.field.m)
             d = []
             for bit in bits:
-                vole_index, di = prover.commit(value)
+                vole_index, di = prover.commit(bit)
                 verifier.update_q(vole_index, di)
                 d.append(di)
             circuit.create_wire(d, i, j)
         print(row)
 
     for row in circuit.input_sudoku:
-        print(row)
+        for wire in row:
+            pass
+            print(wire.value, end=" ")
+        print()
+
+    wires = circuit.get_column_wires(0)
+    for wire in wires:
+        print(wire.value)
