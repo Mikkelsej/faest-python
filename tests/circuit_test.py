@@ -27,6 +27,13 @@ class TestSudokuCircuit:
         for i in range(9):
             assert col_wires[i] == circuit.input_sudoku[i][0]
 
+    def test_row(self):
+        circuit = self.sudoku_circuit
+        row_wires = circuit.get_row_wires(0)
+        assert len(row_wires) == 9
+        for i in range(9):
+            assert row_wires[i] == circuit.input_sudoku[0][i]
+
     def test_box(self):
         circuit = self.sudoku_circuit
         box_wires = circuit.get_box_wires(0)

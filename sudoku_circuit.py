@@ -36,6 +36,17 @@ class SudokuCircuit(CircuitBuilder):
         """
         return [self.input_sudoku[i][col_index] for i in range(9)]
 
+    def get_row_wires(self, row_index: int) -> list[Wire]:
+        """Extract all wires from a specific row.
+
+        Args:
+            row_index: Row index (0-8)
+
+        Returns:
+            List of wires in the specified row
+        """
+        return [self.input_sudoku[row_index][i] for i in range(9)]
+
     def get_box_wires(self, box_index: int) -> list[Wire]:
         """Extract all wires from a specific 3x3 box.
 
