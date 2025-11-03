@@ -25,6 +25,7 @@ class Prover:
         self.v = v
 
     def commit(self, w: int) -> tuple[int, int]:
+        """Returns i, di"""
         i: int = self.index
         di: int = self.field.add(self.u[i], w)
 

@@ -47,10 +47,11 @@ class Wire:
 
     _id_counter = 1
 
-    def __init__(self, value: int):
+    def __init__(self, value: int, commitment_index: int | None = None):
         self.value: int = value
         self.name = f"wire_{Wire._id_counter}"
         self.id = Wire._id_counter
+        self.commitment_index = commitment_index  # VOLE commitment index, if committed
         Wire._id_counter += 1
 
 
@@ -63,10 +64,10 @@ class CircuitBuilder:
         self.constraints: list[bool] = []
         self.is_valid: bool = all(self.constraints)
 
-    def create_wire(self, value, row: int):
+    def create_wire(self, value, value: int, i: int, j: int):
         """Create a new wire in the circuit."""
         wire = Wire(value)
-        self.wires[row].append(wire)
+        self.wires[i][j] = wire
         return wire
 
     def add_gate(self, gate_type, inputs):

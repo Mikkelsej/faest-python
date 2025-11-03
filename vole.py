@@ -9,8 +9,6 @@ class Vole:
         self.length: int = length
         self.u: list[int]
         self.v: list[int]
-        self.delta: int
-        self.q: list[int]
 
     def initialize_prover(self, prover: Prover) -> None:
         # Sets u as {0,1}^l
@@ -23,20 +21,15 @@ class Vole:
 
     def initialize_verifier(self, verifier: Verifier) -> None:
         # Sets delta as x, where x\in F_{2^\lambda}
-        self.delta = self.field.get_random()
-        verifier.set_delta(self.delta)
+        delta = self.field.get_random()
+        verifier.set_delta(delta)
 
         # Sets q as {q_i = v_i + u_i \cdot delta} for i \in l
-        self.q = [
-            self.field.add(vi, self.field.mul(ui, self.delta))
+        q = [
+            self.field.add(vi, self.field.mul(ui, delta))
             for (vi, ui) in zip(self.v, self.u)
         ]
-        verifier.set_q(self.q)
-
-    def commit(self, index: int, di: int) -> None:
-        qi: int = self.field.add(self.q[index], di * self.delta)
-        self.q[index] = qi
-
+        verifier.set_q(q)
 
 if __name__ == "__main__":
     length: int = 1000

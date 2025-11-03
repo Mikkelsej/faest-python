@@ -19,9 +19,10 @@ def main() -> None:
     w = 1
     i, di = alice.commit(w)
     bob.update_q(i, di)
-
     wi, vi, i = alice.open(w, alice.v[0], 0)
-    print(bob.check(wi, vi, i))
+    print(f"{bob.check(wi, vi, i)} for wi={wi}")
+
+
     value = 1
     result = 0
     for i in range(1, 10):
@@ -38,6 +39,13 @@ def main() -> None:
     result = field.add(value, result)
     result2 = result
     print(field.add(result1, result2))
+
+    bit_length = 4
+    nums = field.bit_dec(9, bit_length)
+    print(nums)
+    num = field.num_rec(bit_length, nums)
+    print(num)
+
 
 
 if __name__ == "__main__":
