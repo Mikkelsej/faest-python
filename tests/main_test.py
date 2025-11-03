@@ -108,3 +108,16 @@ class TestExtensionField:
             d, e = prover.mul(index_a, index_b, index_c)
 
             assert verifier.check_mul(index_a, index_b, index_c, d, e)
+
+    def test_commit(self):
+        vole: Vole = Vole(self.field, 1000)
+        prover = Prover(vole)
+        verifier = Verifier(vole)
+
+        i, di = prover.commit(1)
+
+        verifier.update_q(i, di)
+
+        wi, vi, index = prover.open(1, prover.v[i], i)
+
+        assert verifier.check(wi, vi, index)

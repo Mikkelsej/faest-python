@@ -20,9 +20,10 @@ class SudokuCircuit(CircuitBuilder):
         self.build_circuit()
         self.input_sudoku: list[list[Wire]] = [[Wire(0) for _ in range(9)] for _ in range(9)]
 
-    def create_wire(self, bits: list[int], i: int, j: int):
+    def create_wire(self, bits: list[int], i: int, j: int, commitment_index: int):
         value = self.vole.field.num_rec(self.vole.field.m, bits)
-        wire = Wire(value)
+        wire = Wire(value, commitment_index)
+        print(commitment_index)
         self.input_sudoku[i][j] = wire
 
     def get_column_wires(self, col_index: int) -> list[Wire]:
@@ -73,6 +74,22 @@ class SudokuCircuit(CircuitBuilder):
 
         return box_wires
 
+    def commit_sudoku(self, sudoku: list[list[int]]):
+        for i, row in enumerate(sudoku):
+            for j, value in enumerate(row):
+                bits = self.vole.field.bit_dec(value, self.vole.field.m)
+                d = []
+                vole_indexes = []
+                for bit in bits:
+                    vole_index, di = self.prover.commit(bit)
+                    vole_indexes.append(vole_index)
+                    self.verifier.update_q(vole_index, di)
+                    d.append(di)
+                vole_index = vole_indexes[0]
+                print(vole_indexes)
+                self.create_wire(d, i, j, vole_index)
+
+
     def build_circuit(self):
         for row in self.wires:
             self.add_gate("square", row)
@@ -94,16 +111,7 @@ if __name__ == "__main__":
 
     solved_sudoku = sudoku.solution
 
-    for i, row in enumerate(solved_sudoku):
-        for j, value in enumerate(row):
-            bits = field.bit_dec(value, vole.field.m)
-            d = []
-            for bit in bits:
-                vole_index, di = prover.commit(bit)
-                verifier.update_q(vole_index, di)
-                d.append(di)
-            circuit.create_wire(d, i, j)
-        print(row)
+    circuit.commit_sudoku(solved_sudoku)
 
     for row in circuit.input_sudoku:
         for wire in row:

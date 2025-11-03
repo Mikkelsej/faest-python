@@ -14,11 +14,14 @@ from sudoku_generator import SudokuGenerator
 class TestSudokuCircuit:
     @pytest.fixture(autouse=True)
     def setup(self) -> None:
-        field = ExtensionField(8)
-        vole = Vole(field, 1000)
-        prover = Prover(vole)
-        verifier = Verifier(vole)
-        self.sudoku_circuit = SudokuCircuit(prover, verifier, vole)
+        self.field = ExtensionField(8)
+        self.vole = Vole(self.field, 1000)
+        self.prover = Prover(self.vole)
+        self.verifier = Verifier(self.vole)
+        self.sudoku_circuit = SudokuCircuit(self.prover, self.verifier, self.vole)
+        generator = SudokuGenerator()
+        self.part_sudoku = generator.part_sudoku
+        self.solved_sudoku = generator.solution
 
     def test_column(self):
         circuit = self.sudoku_circuit
@@ -42,15 +45,26 @@ class TestSudokuCircuit:
             assert box_wires[i] == circuit.input_sudoku[i//3][i%3]
 
     def test_valid_sudoku_generation(self):
-        generator = SudokuGenerator()
-        part_sudoku = generator.part_sudoku
-        solved_sudoku = generator.solution
+
         valid_list = []
-        for i, row in enumerate(part_sudoku):
+        for i, row in enumerate(self.part_sudoku):
             for j, value in enumerate(row):
                 if value != 0:
-                    solved_value = solved_sudoku[i][j]
+                    solved_value = self.solved_sudoku[i][j]
                     valid = solved_value == value
                     valid_list.append(valid)
         assert all(valid_list)
 
+
+    def test_open_circuit(self):
+        circuit = self.sudoku_circuit
+
+        circuit.commit_sudoku(self.solved_sudoku)
+        for i, row in enumerate(circuit.input_sudoku):
+            for j, wire in enumerate(row):
+                vole_index = wire.commitment_index
+                bits = self.field.bit_dec(self.solved_sudoku[i][j], self.field.m)
+                print(bits)
+                for bit_idx, bit in enumerate(bits):
+                    wi, vi, index = self.prover.open(bit, self.prover.v[vole_index+bit_idx], vole_index+bit_idx)
+                    assert self.verifier.check(wi, vi, index)
