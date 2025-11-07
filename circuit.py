@@ -80,6 +80,41 @@ class Gate:
             self.output.value = result
             self.output.commitment_index = commitment_index
 
+        elif self.gate_type == "pow":
+            input_wire = self.inputs[0]
+            wires: list[Wire] = [input_wire]
+            for i in range(self.field.m - 1):
+                gate = Gate("square", [wires[i]], self.prover, self.verifier)
+                wire = Wire(gate.evaluate(), gate.output.commitment_index)
+                wires.append(wire)
+            output_gate = Gate("mul", wires, self.prover, self.verifier)
+            self.output.value = output_gate.evaluate()
+            self.output.commitment_index = output_gate.output.commitment_index
+
+        elif self.gate_type == "check_0":
+            wires: list[Wire] = []
+            i, _ = self.prover.commit(1)
+            wire_1 = Wire(1, i)
+            for wire in self.inputs:
+                gate = Gate("pow", [wire], self.prover, self.verifier)
+                wire = Wire(gate.evaluate(), gate.output.commitment_index)
+                wires.append(wire)
+
+            wires_2: list[Wire] = []
+            for wire in wires:
+                gate = Gate("add", [wire, wire_1], self.prover, self.verifier)
+                wire = Wire(gate.evaluate(), gate.output.commitment_index)
+                wires_2.append(wire)
+
+            gate = Gate("mul", wires_2, self.prover, self.verifier)
+            wire = Wire(gate.evaluate(), gate.output.commitment_index)
+
+            gate = Gate("add", [wire, wire_1], self.prover, self.verifier)
+            wire = Wire(gate.evaluate(), gate.output.commitment_index)
+            self.output.value = wire.value
+            self.output.commitment_index = wire.commitment_index
+
+
         return self.output.value
 
 

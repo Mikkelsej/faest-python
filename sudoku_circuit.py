@@ -103,7 +103,6 @@ class SudokuCircuit(CircuitBuilder):
         result_square_wire = Wire(result_square, add_gate_square.output.commitment_index)
         expected_value_of_squares = 1
 
-        # Commit the constant value
         const_index_1, _ = self.prover.commit(expected_value_of_squares)
         wire_1 = Wire(expected_value_of_squares, const_index_1)
 
@@ -122,12 +121,18 @@ class SudokuCircuit(CircuitBuilder):
         result2_gate = Gate("add", [result_cubed_wire, wire_2], self.prover, self.verifier)
         result2_wire = Wire(result2_gate.evaluate(), result2_gate.output.commitment_index)
 
-        final_gate = Gate("add", [result1_wire, result2_wire], self.prover, self.verifier)
+        final_gate = Gate("check_0", [result1_wire, result2_wire], self.prover, self.verifier)
         final_wire = Wire(final_gate.evaluate(), final_gate.output.commitment_index)
 
         return final_wire
 
-    def is_valid2(self):
+    def is_valid2(self) -> Wire:
+        """Validate the entire sudoku puzzle.
+
+        Returns:
+            A single wire that evaluates to 0 if and only if the sudoku is valid.
+            All rows, columns, and boxes must be valid for this to return 0.
+        """
         valid_list = []
         for i in range(9):
             row = self.get_row_wires(i)
@@ -141,7 +146,13 @@ class SudokuCircuit(CircuitBuilder):
             box = self.get_box_wires(i)
             valid = self.validate_wires(box)
             valid_list.append(valid)
-        return valid_list
+
+        # Combine all 27 validation wires into a single wire
+        # If all are 0 (valid), the sum will be 0
+        final_gate = Gate("add", valid_list, self.prover, self.verifier)
+        final_wire = Wire(final_gate.evaluate(), final_gate.output.commitment_index)
+
+        return final_wire
 
 
 if __name__ == "__main__":
@@ -162,7 +173,6 @@ if __name__ == "__main__":
 
     for row in circuit.input_sudoku:
         for wire in row:
-            pass
             print(wire.value, end=" ")
         print()
 

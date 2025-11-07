@@ -64,3 +64,23 @@ class ExtensionField:
 
     def get_random_bit(self) -> int:
         return random.randint(0, 1)
+
+    def pow255(self, a):
+        a2 = self.mul(a, a)        # a^2
+        a4 = self.mul(a2, a2)      # a^4
+        a8 = self.mul(a4, a4)      # a^8
+        a16 = self.mul(a8, a8)     # a^16
+        a32 = self.mul(a16, a16)   # a^32
+        a64 = self.mul(a32, a32)   # a^64
+        a128 = self.mul(a64, a64)  # a^128
+
+        # Multiply them all: 128+64+32+16+8+4+2+1 = 255
+        result = self.mul(a128, a64)
+        result = self.mul(result, a32)
+        result = self.mul(result, a16)
+        result = self.mul(result, a8)
+        result = self.mul(result, a4)
+        result = self.mul(result, a2)
+        result = self.mul(result, a)
+
+        return result
