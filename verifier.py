@@ -10,6 +10,7 @@ class Verifier:
         self.field = vole.field
         self.delta: int
         self.q: list[int]
+        self.index: int = 0
         vole.initialize_verifier(self)
 
     def set_delta(self, delta: int) -> None:
@@ -23,7 +24,7 @@ class Verifier:
         qi: int = self.field.add(self.q[i], self.field.mul(di, self.delta))
         self.q[i] = qi
 
-    def check(self, wi: int, vi: int, index: int) -> bool:
+    def check_open(self, wi: int, vi: int, index: int) -> bool:
         original_qi: int = self.q[index]
 
         new_qi = self.field.add(vi, self.field.mul(wi, self.delta))
@@ -34,7 +35,24 @@ class Verifier:
         return False
 
     def add(self, index_a: int, index_b: int) -> int:
-        return self.field.add(self.q[index_a], self.q[index_b])
+        """Add two committed values and return the result index"""
+        c = self.index
+        self.index += 1
+
+        # q[c] = q[a] + q[b] (addition is linear, no correction needed)
+        self.q[c] = self.field.add(self.q[index_a], self.q[index_b])
+
+        return c
+
+    def mul(self, index_a: int, index_b: int, correction: int) -> int:
+        """Allocate result index and apply correction for multiplication"""
+        c = self.index
+        self.index += 1
+
+        # Apply the correction to q[c]
+        self.update_q(c, correction)
+
+        return c
 
     def check_mul(self, index_a: int, index_b: int, index_c: int, d: int, e: int) -> bool:
         delta: int = self.delta

@@ -20,7 +20,7 @@ def main() -> None:
     i, di = alice.commit(w)
     bob.update_q(i, di)
     wi, vi, i = alice.open(w, alice.v[0], 0)
-    print(f"{bob.check(wi, vi, i)} for wi={wi}")
+    print(f"{bob.check_open(wi, vi, i)} for wi={wi}")
 
 
     value = 1

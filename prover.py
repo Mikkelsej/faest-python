@@ -37,32 +37,34 @@ class Prover:
     def open(self, wi: int, vi: int, index: int) -> tuple[int, int, int]:
         return wi, vi, index
 
-    def add(self, a: int, b: int) -> tuple[int, int]:
-        return self.field.add(self.v[a], self.v[b]), self.field.add(
-            self.u[a], self.u[b]
-        )
+    def add(self, a: int, b: int) -> int:
+        """Add two committed values and return the result index"""
+        c = self.index
+        self.index += 1
 
-    def mul(self, a: int, b: int, c: int) -> tuple[int, int]:
+        self.v[c] = self.field.add(self.v[a], self.v[b])
+        self.u[c] = self.field.add(self.u[a], self.u[b])
 
-        d: int = self.field.sub(
+        return c
+
+    def mul(self, a: int, b: int) -> tuple[int, int, int, int]:
+        """Multiply two committed values and return (result_index, correction, d, e)"""
+        c = self.index
+        self.index += 1
+
+        # Commit u[c] = u[a] * u[b]
+        uc = self.field.mul(self.u[a], self.u[b])
+        correction = self.field.sub(uc, self.u[c])
+        self.u[c] = uc
+
+        # Compute correction values for verification
+        d = self.field.sub(
             self.field.add(
                 self.field.mul(self.v[a], self.u[b]),
                 self.field.mul(self.v[b], self.u[a]),
             ),
             self.v[c],
         )
-        e: int = self.field.mul(self.v[a], self.v[b])
+        e = self.field.mul(self.v[a], self.v[b])
 
-        return d, e
-
-    def mul_commit(self, a: int, b: int):
-        c: int = self.index
-        self.index += 1
-
-        uc: int = self.field.mul(self.u[a], self.u[b])
-
-        correction: int = self.field.sub(uc, self.u[c])
-
-        self.u[c] = uc
-
-        return c, correction
+        return c, correction, d, e

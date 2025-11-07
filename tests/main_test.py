@@ -90,24 +90,20 @@ class TestExtensionField:
         u: list[int] = prover.u
         delta: int = verifier.delta
 
-        for index_a in range(len(u) - 1):
+        for index_a in range(100):
             index_b: int = index_a + 1
-            v_prime, u_prime = prover.add(index_a, index_b)
 
-            q_prime = verifier.add(index_a, index_b)
+            prover_c = prover.add(index_b, index_a)
+            verifier_c = verifier.add(index_a, index_b)
 
-            assert q_prime == self.field.add(v_prime, u_prime * delta)
+            assert verifier.q[verifier_c] == self.field.add(prover.v[prover_c], prover.u[prover_c] * delta)
 
     def vole_mul(self, prover: Prover, verifier: Verifier) -> None:
-        for index_a in range(len(prover.u) - 2):
+        for index_a in range(100):
             index_b = index_a + 1
-            index_c, correction = prover.mul_commit(index_a, index_b)
-
-            verifier.update_q(index_c, correction)
-
-            d, e = prover.mul(index_a, index_b, index_c)
-
-            assert verifier.check_mul(index_a, index_b, index_c, d, e)
+            prover_c, correction, d, e = prover.mul(index_a, index_b)
+            verifier.mul(index_a, index_b, correction)
+            assert verifier.check_mul(index_a, index_b, prover_c, d, e)
 
     def test_commit(self):
         vole: Vole = Vole(self.field, 1000)
@@ -120,4 +116,4 @@ class TestExtensionField:
 
         wi, vi, index = prover.open(1, prover.v[i], i)
 
-        assert verifier.check(wi, vi, index)
+        assert verifier.check_open(wi, vi, index)

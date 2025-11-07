@@ -15,7 +15,7 @@ class TestSudokuCircuit:
     @pytest.fixture(autouse=True)
     def setup(self) -> None:
         self.field = ExtensionField(8)
-        self.vole = Vole(self.field, 1000)
+        self.vole = Vole(self.field, 2000)
         self.prover = Prover(self.vole)
         self.verifier = Verifier(self.vole)
         self.sudoku_circuit = SudokuCircuit(self.prover, self.verifier, self.vole)
@@ -64,7 +64,33 @@ class TestSudokuCircuit:
             for j, wire in enumerate(row):
                 vole_index = wire.commitment_index
                 bits = self.field.bit_dec(self.solved_sudoku[i][j], self.field.m)
-                print(bits)
                 for bit_idx, bit in enumerate(bits):
                     wi, vi, index = self.prover.open(bit, self.prover.v[vole_index+bit_idx], vole_index+bit_idx)
-                    assert self.verifier.check(wi, vi, index)
+                    assert self.verifier.check_open(wi, vi, index)
+
+    def test_valid_row(self):
+        circuit = self.sudoku_circuit
+
+        circuit.commit_sudoku(self.solved_sudoku)
+        for i, row in enumerate(circuit.input_sudoku):
+            wire = circuit.validate_wires(row)
+            assert wire.value == 0
+
+    def test_valid_sudoku(self):
+        circuit = self.sudoku_circuit
+
+        circuit.commit_sudoku(self.solved_sudoku)
+        valid = circuit.is_valid2()
+        for wire in valid:
+            assert wire.value == 0
+
+    def test_invalid_sudoku(self):
+        circuit = self.sudoku_circuit
+        solved_sudoku = [row[:] for row in self.solved_sudoku]
+        solved_sudoku[0][0] = solved_sudoku[0][1]
+
+        circuit.commit_sudoku(solved_sudoku)
+
+        valid = circuit.is_valid2()
+        for wire in valid:
+            assert not wire.value == 0

@@ -17,13 +17,11 @@ class SudokuCircuit(CircuitBuilder):
         self.prover = prover
         self.verifier = verifier
         self.vole = vole
-        self.build_circuit()
         self.input_sudoku: list[list[Wire]] = [[Wire(0) for _ in range(9)] for _ in range(9)]
 
     def create_wire(self, bits: list[int], i: int, j: int, commitment_index: int):
         value = self.vole.field.num_rec(self.vole.field.m, bits)
         wire = Wire(value, commitment_index)
-        print(commitment_index)
         self.input_sudoku[i][j] = wire
 
     def get_column_wires(self, col_index: int) -> list[Wire]:
@@ -86,15 +84,64 @@ class SudokuCircuit(CircuitBuilder):
                     self.verifier.update_q(vole_index, di)
                     d.append(di)
                 vole_index = vole_indexes[0]
-                print(vole_indexes)
-                self.create_wire(d, i, j, vole_index)
+                self.create_wire(bits, i, j, vole_index)
 
+    def validate_wires(self, wires: list[Wire]) -> Wire:
+        squared_wires = []
+        cubed_wires = []
+        for wire in wires:
+            square_gate = Gate("square", [wire], self.prover, self.verifier)
+            square_value = square_gate.evaluate()
+            squared_wires.append(Wire(square_value, square_gate.output.commitment_index))
 
-    def build_circuit(self):
-        for row in self.wires:
-            self.add_gate("square", row)
-            self.add_gate("cube", row)
-            self.add_gate("mul", row)
+            cube_gate = Gate("cube", [wire], self.prover, self.verifier)
+            cube_value = cube_gate.evaluate()
+            cubed_wires.append(Wire(cube_value, cube_gate.output.commitment_index))
+
+        add_gate_square = Gate("add", squared_wires, self.prover, self.verifier)
+        result_square = add_gate_square.evaluate()
+        result_square_wire = Wire(result_square, add_gate_square.output.commitment_index)
+        expected_value_of_squares = 1
+
+        # Commit the constant value
+        const_index_1, _ = self.prover.commit(expected_value_of_squares)
+        wire_1 = Wire(expected_value_of_squares, const_index_1)
+
+        result1_gate = Gate("add", [result_square_wire, wire_1], self.prover, self.verifier)
+        result1_wire = Wire(result1_gate.evaluate(), result1_gate.output.commitment_index)
+
+        add_gate_cube = Gate("add", cubed_wires, self.prover, self.verifier)
+        result_cubed = add_gate_cube.evaluate()
+        result_cubed_wire = Wire(result_cubed, add_gate_cube.output.commitment_index)
+
+        expected_value_of_cubes = 73
+        # Commit the constant value
+        const_index_2, _ = self.prover.commit(expected_value_of_cubes)
+        wire_2 = Wire(expected_value_of_cubes, const_index_2)
+
+        result2_gate = Gate("add", [result_cubed_wire, wire_2], self.prover, self.verifier)
+        result2_wire = Wire(result2_gate.evaluate(), result2_gate.output.commitment_index)
+
+        final_gate = Gate("add", [result1_wire, result2_wire], self.prover, self.verifier)
+        final_wire = Wire(final_gate.evaluate(), final_gate.output.commitment_index)
+
+        return final_wire
+
+    def is_valid2(self):
+        valid_list = []
+        for i in range(9):
+            row = self.get_row_wires(i)
+            valid = self.validate_wires(row)
+            valid_list.append(valid)
+
+            col = self.get_column_wires(i)
+            valid = self.validate_wires(col)
+            valid_list.append(valid)
+
+            box = self.get_box_wires(i)
+            valid = self.validate_wires(box)
+            valid_list.append(valid)
+        return valid_list
 
 
 if __name__ == "__main__":
