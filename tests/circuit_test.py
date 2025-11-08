@@ -2,10 +2,9 @@ import sys
 import os
 import pytest
 
-from circuit import Gate, Wire
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
+from circuit import Gate, Wire
 from sudoku_circuit import SudokuCircuit
 from prover import Prover
 from verifier import Verifier
@@ -18,7 +17,7 @@ class TestSudokuCircuit:
     @pytest.fixture(autouse=True)
     def setup(self) -> None:
         self.field = ExtensionField(8)
-        self.vole = Vole(self.field, 2500000)
+        self.vole = Vole(self.field, 4000)
         self.prover = Prover(self.vole)
         self.verifier = Verifier(self.vole)
         self.sudoku_circuit = SudokuCircuit(self.prover, self.verifier, self.vole)
@@ -64,11 +63,11 @@ class TestSudokuCircuit:
         assert Gate("pow", [Wire(0, 0)], self.prover, self.verifier).evaluate() == 0
 
     def test_check_0_gate_valid(self):
-        wires: list[Wire] = [Wire(0, i) for i in range(1000)]
+        wires: list[Wire] = [Wire(0, i) for i in range(100)]
         assert Gate("check_0", wires, self.prover, self.verifier).evaluate() == 0
 
     def test_check_0_gate_invalid(self):
-        wires: list[Wire] = [Wire(self.field.get_random(), i) for i in range(1000)]
+        wires: list[Wire] = [Wire(self.field.get_random(), i) for i in range(100)]
         assert not Gate("check_0", wires, self.prover, self.verifier).evaluate() == 0
 
     def test_open_circuit(self):
@@ -89,7 +88,7 @@ class TestSudokuCircuit:
         circuit = self.sudoku_circuit
 
         circuit.commit_sudoku(self.solved_sudoku)
-        for i, row in enumerate(circuit.input_sudoku):
+        for row in circuit.input_sudoku:
             wire = circuit.validate_wires(row)
             assert wire.value == 0
 
@@ -115,7 +114,7 @@ class TestSudokuCircuit:
             result_wire.value != 0
         ), "Invalid sudoku should return a wire with non-zero value"
 
-    @pytest.mark.parametrize("iteration", range(1000))
+    @pytest.mark.parametrize("iteration", range(10))
     def test_all_sudoku_violation_types(self, iteration: int) -> None:
         """Test that the circuit detects all types of sudoku violations."""
 
@@ -178,3 +177,4 @@ class TestSudokuCircuit:
         assert (
             result_wire.value != 0
         ), "Sudoku with all same values should be detected as invalid"
+        

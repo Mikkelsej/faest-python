@@ -1,6 +1,5 @@
 """Circuit builder and constraints for Sudoku over VOLE-backed arithmetic."""
 
-
 from field import ExtensionField
 from prover import Prover
 from verifier import Verifier
@@ -26,8 +25,12 @@ class Gate:
                 result = self.field.add(result, input_wire.value)
             commitment_index = self.inputs[0].commitment_index
             for i in range(len(self.inputs) - 1):
-                commitment_index = self.prover.add(commitment_index, self.inputs[i + 1].commitment_index)
-                commitment_index = self.verifier.add(commitment_index, self.inputs[i + 1].commitment_index)
+                commitment_index = self.prover.add(
+                    commitment_index, self.inputs[i + 1].commitment_index
+                )
+                commitment_index = self.verifier.add(
+                    commitment_index, self.inputs[i + 1].commitment_index
+                )
             self.output.value = result
             self.output.commitment_index = commitment_index
 
@@ -37,24 +40,40 @@ class Gate:
                 result = self.field.mul(result, input_wire.value)
             commitment_index = self.inputs[0].commitment_index
             for i in range(len(self.inputs) - 1):
-                result_idx, correction, d, e = self.prover.mul(commitment_index, self.inputs[i + 1].commitment_index)
-                commitment_index = self.verifier.mul(commitment_index, self.inputs[i + 1].commitment_index, correction)
+                result_idx, correction, d, e = self.prover.mul(
+                    commitment_index, self.inputs[i + 1].commitment_index
+                )
+                commitment_index = self.verifier.mul(
+                    commitment_index, self.inputs[i + 1].commitment_index, correction
+                )
             self.output.value = result
             self.output.commitment_index = commitment_index
 
         elif self.gate_type == "square":
             result = 1
             for input_wire in self.inputs:
-                result = self.field.mul(result, self.field.mul(input_wire.value, input_wire.value))
+                result = self.field.mul(
+                    result, self.field.mul(input_wire.value, input_wire.value)
+                )
             commitment_index = None
-            for i in range(len(self.inputs)):
-                square_idx, correction, d, e = self.prover.mul(self.inputs[i].commitment_index, self.inputs[i].commitment_index)
-                square_commit = self.verifier.mul(self.inputs[i].commitment_index, self.inputs[i].commitment_index, correction)
+            for i, _ in enumerate(self.inputs):
+                square_idx, correction, d, e = self.prover.mul(
+                    self.inputs[i].commitment_index, self.inputs[i].commitment_index
+                )
+                square_commit = self.verifier.mul(
+                    self.inputs[i].commitment_index,
+                    self.inputs[i].commitment_index,
+                    correction,
+                )
                 if commitment_index is None:
                     commitment_index = square_commit
                 else:
-                    result_idx, correction2, d2, e2 = self.prover.mul(commitment_index, square_commit)
-                    commitment_index = self.verifier.mul(commitment_index, square_commit, correction2)
+                    result_idx, correction2, d2, e2 = self.prover.mul(
+                        commitment_index, square_commit
+                    )
+                    commitment_index = self.verifier.mul(
+                        commitment_index, square_commit, correction2
+                    )
             self.output.value = result
             self.output.commitment_index = commitment_index
 
@@ -65,18 +84,32 @@ class Gate:
                 cube = self.field.mul(square, input_wire.value)
                 result = self.field.mul(result, cube)
             commitment_index = None
-            for i in range(len(self.inputs)):
-                square_idx, correction1, d1, e1 = self.prover.mul(self.inputs[i].commitment_index, self.inputs[i].commitment_index)
-                square_commit = self.verifier.mul(self.inputs[i].commitment_index, self.inputs[i].commitment_index, correction1)
+            for i, _ in enumerate(self.inputs):
+                square_idx, correction1, d1, e1 = self.prover.mul(
+                    self.inputs[i].commitment_index, self.inputs[i].commitment_index
+                )
+                square_commit = self.verifier.mul(
+                    self.inputs[i].commitment_index,
+                    self.inputs[i].commitment_index,
+                    correction1,
+                )
 
-                cube_idx, correction2, d2, e2 = self.prover.mul(square_idx, self.inputs[i].commitment_index)
-                cube_commit = self.verifier.mul(square_commit, self.inputs[i].commitment_index, correction2)
+                cube_idx, correction2, d2, e2 = self.prover.mul(
+                    square_idx, self.inputs[i].commitment_index
+                )
+                cube_commit = self.verifier.mul(
+                    square_commit, self.inputs[i].commitment_index, correction2
+                )
 
                 if commitment_index is None:
                     commitment_index = cube_commit
                 else:
-                    result_idx, correction3, d3, e3 = self.prover.mul(commitment_index, cube_commit)
-                    commitment_index = self.verifier.mul(commitment_index, cube_commit, correction3)
+                    result_idx, correction3, d3, e3 = self.prover.mul(
+                        commitment_index, cube_commit
+                    )
+                    commitment_index = self.verifier.mul(
+                        commitment_index, cube_commit, correction3
+                    )
             self.output.value = result
             self.output.commitment_index = commitment_index
 
@@ -114,9 +147,7 @@ class Gate:
             self.output.value = wire.value
             self.output.commitment_index = wire.commitment_index
 
-
         return self.output.value
-
 
 
 class Wire:

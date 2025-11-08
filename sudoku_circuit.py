@@ -17,7 +17,9 @@ class SudokuCircuit(CircuitBuilder):
         self.prover = prover
         self.verifier = verifier
         self.vole = vole
-        self.input_sudoku: list[list[Wire]] = [[Wire(0) for _ in range(9)] for _ in range(9)]
+        self.input_sudoku: list[list[Wire]] = [
+            [Wire(0) for _ in range(9)] for _ in range(9)
+        ]
 
     def create_wire(self, bits: list[int], i: int, j: int, commitment_index: int):
         value = self.vole.field.num_rec(self.vole.field.m, bits)
@@ -92,7 +94,9 @@ class SudokuCircuit(CircuitBuilder):
         for wire in wires:
             square_gate = Gate("square", [wire], self.prover, self.verifier)
             square_value = square_gate.evaluate()
-            squared_wires.append(Wire(square_value, square_gate.output.commitment_index))
+            squared_wires.append(
+                Wire(square_value, square_gate.output.commitment_index)
+            )
 
             cube_gate = Gate("cube", [wire], self.prover, self.verifier)
             cube_value = cube_gate.evaluate()
@@ -100,14 +104,20 @@ class SudokuCircuit(CircuitBuilder):
 
         add_gate_square = Gate("add", squared_wires, self.prover, self.verifier)
         result_square = add_gate_square.evaluate()
-        result_square_wire = Wire(result_square, add_gate_square.output.commitment_index)
+        result_square_wire = Wire(
+            result_square, add_gate_square.output.commitment_index
+        )
         expected_value_of_squares = 1
 
         const_index_1, _ = self.prover.commit(expected_value_of_squares)
         wire_1 = Wire(expected_value_of_squares, const_index_1)
 
-        result1_gate = Gate("add", [result_square_wire, wire_1], self.prover, self.verifier)
-        result1_wire = Wire(result1_gate.evaluate(), result1_gate.output.commitment_index)
+        result1_gate = Gate(
+            "add", [result_square_wire, wire_1], self.prover, self.verifier
+        )
+        result1_wire = Wire(
+            result1_gate.evaluate(), result1_gate.output.commitment_index
+        )
 
         add_gate_cube = Gate("add", cubed_wires, self.prover, self.verifier)
         result_cubed = add_gate_cube.evaluate()
@@ -118,10 +128,16 @@ class SudokuCircuit(CircuitBuilder):
         const_index_2, _ = self.prover.commit(expected_value_of_cubes)
         wire_2 = Wire(expected_value_of_cubes, const_index_2)
 
-        result2_gate = Gate("add", [result_cubed_wire, wire_2], self.prover, self.verifier)
-        result2_wire = Wire(result2_gate.evaluate(), result2_gate.output.commitment_index)
+        result2_gate = Gate(
+            "add", [result_cubed_wire, wire_2], self.prover, self.verifier
+        )
+        result2_wire = Wire(
+            result2_gate.evaluate(), result2_gate.output.commitment_index
+        )
 
-        final_gate = Gate("check_0", [result1_wire, result2_wire], self.prover, self.verifier)
+        final_gate = Gate(
+            "check_0", [result1_wire, result2_wire], self.prover, self.verifier
+        )
         final_wire = Wire(final_gate.evaluate(), final_gate.output.commitment_index)
 
         return final_wire
@@ -148,8 +164,9 @@ class SudokuCircuit(CircuitBuilder):
             valid_list.append(valid)
 
         # Combine all 27 validation wires into a single wire
-        # If all are 0 (valid), the sum will be 0
-        final_gate = Gate("add", valid_list, self.prover, self.verifier)
+        # Use check_0 gate which returns 0 if and only if ALL inputs are 0
+        # This correctly handles any number of violations (odd or even)
+        final_gate = Gate("check_0", valid_list, self.prover, self.verifier)
         final_wire = Wire(final_gate.evaluate(), final_gate.output.commitment_index)
 
         return final_wire
