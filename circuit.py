@@ -1,191 +1,175 @@
 """Circuit builder and constraints for Sudoku over VOLE-backed arithmetic."""
 
-from field import ExtensionField
+from abc import ABC, abstractmethod
 from prover import Prover
 from verifier import Verifier
 
 
-class Gate:
-    """Represents a gate in the arithmetic circuit."""
+class Wire:
+    """A wire is a reference to a committed value in the VOLE scheme."""
 
-    def __init__(self, gate_type, inputs, prover, verifier):
-        self.gate_type = gate_type
+    def __init__(self, commitment_index: int):
+        self.commitment_index: int = commitment_index
+
+    def get_value(self, prover: Prover) -> int:
+        """Get the actual value from the prover's committed values."""
+        return prover.u[self.commitment_index]
+
+
+class Gate(ABC):
+    """Abstract base class for gates in the arithmetic circuit."""
+
+    def __init__(self, inputs: list[Wire], prover: Prover, verifier: Verifier):
         self.inputs: list[Wire] = inputs
-        self.output: Wire
-        self.field: ExtensionField = ExtensionField(8)
         self.prover: Prover = prover
         self.verifier: Verifier = verifier
 
-    def evaluate(self):
-        """Evaluate the gate based on input values."""
-        self.output = Wire(0)
-        if self.gate_type == "add":
-            result = 0
-            for input_wire in self.inputs:
-                result = self.field.add(result, input_wire.value)
-            commitment_index = self.inputs[0].commitment_index
-            for i in range(len(self.inputs) - 1):
-                commitment_index = self.prover.add(
-                    commitment_index, self.inputs[i + 1].commitment_index
+    @abstractmethod
+    def evaluate(self) -> Wire:
+        """Evaluate the gate and return the output wire."""
+        pass
+
+
+class AddGate(Gate):
+    """Addition gate: output = sum of all inputs."""
+
+    def evaluate(self) -> Wire:
+        commitment_index = self.inputs[0].commitment_index
+        for i in range(len(self.inputs) - 1):
+            next_input_index = self.inputs[i + 1].commitment_index
+            prover_idx = self.prover.add(commitment_index, next_input_index)
+            self.verifier.add(commitment_index, next_input_index)
+            commitment_index = prover_idx
+
+        return Wire(commitment_index)
+
+
+class MulGate(Gate):
+    """Multiplication gate: output = product of all inputs."""
+
+    def evaluate(self) -> Wire:
+        commitment_index = self.inputs[0].commitment_index
+        for i in range(len(self.inputs) - 1):
+            next_input_index = self.inputs[i + 1].commitment_index
+            result_idx, correction, d, e = self.prover.mul(
+                commitment_index, next_input_index
+            )
+            self.verifier.mul(commitment_index, next_input_index, correction)
+            commitment_index = result_idx
+
+        return Wire(commitment_index)
+
+
+class SquareGate(Gate):
+    """Square gate: output = product of squares of all inputs."""
+
+    def evaluate(self) -> Wire:
+        commitment_index = None
+        for i, _ in enumerate(self.inputs):
+            input_idx = self.inputs[i].commitment_index
+            square_idx, correction, d, e = self.prover.mul(input_idx, input_idx)
+            self.verifier.mul(input_idx, input_idx, correction)
+
+            if commitment_index is None:
+                commitment_index = square_idx
+            else:
+                result_idx, correction2, d2, e2 = self.prover.mul(
+                    commitment_index, square_idx
                 )
-                commitment_index = self.verifier.add(
-                    commitment_index, self.inputs[i + 1].commitment_index
+                self.verifier.mul(commitment_index, square_idx, correction2)
+                commitment_index = result_idx
+
+        return Wire(commitment_index)
+
+
+class CubeGate(Gate):
+    """Cube gate: output = product of cubes of all inputs."""
+
+    def evaluate(self) -> Wire:
+        commitment_index = None
+        for i, _ in enumerate(self.inputs):
+            input_idx = self.inputs[i].commitment_index
+
+            square_idx, correction1, d1, e1 = self.prover.mul(input_idx, input_idx)
+            self.verifier.mul(input_idx, input_idx, correction1)
+
+            cube_idx, correction2, d2, e2 = self.prover.mul(square_idx, input_idx)
+            self.verifier.mul(square_idx, input_idx, correction2)
+
+            if commitment_index is None:
+                commitment_index = cube_idx
+            else:
+                result_idx, correction3, d3, e3 = self.prover.mul(
+                    commitment_index, cube_idx
                 )
-            self.output.value = result
-            self.output.commitment_index = commitment_index
+                self.verifier.mul(commitment_index, cube_idx, correction3)
+                commitment_index = result_idx
 
-        elif self.gate_type == "mul":
-            result = 1
-            for input_wire in self.inputs:
-                result = self.field.mul(result, input_wire.value)
-            commitment_index = self.inputs[0].commitment_index
-            for i in range(len(self.inputs) - 1):
-                result_idx, correction, d, e = self.prover.mul(
-                    commitment_index, self.inputs[i + 1].commitment_index
-                )
-                commitment_index = self.verifier.mul(
-                    commitment_index, self.inputs[i + 1].commitment_index, correction
-                )
-            self.output.value = result
-            self.output.commitment_index = commitment_index
-
-        elif self.gate_type == "square":
-            result = 1
-            for input_wire in self.inputs:
-                result = self.field.mul(
-                    result, self.field.mul(input_wire.value, input_wire.value)
-                )
-            commitment_index = None
-            for i, _ in enumerate(self.inputs):
-                square_idx, correction, d, e = self.prover.mul(
-                    self.inputs[i].commitment_index, self.inputs[i].commitment_index
-                )
-                square_commit = self.verifier.mul(
-                    self.inputs[i].commitment_index,
-                    self.inputs[i].commitment_index,
-                    correction,
-                )
-                if commitment_index is None:
-                    commitment_index = square_commit
-                else:
-                    result_idx, correction2, d2, e2 = self.prover.mul(
-                        commitment_index, square_commit
-                    )
-                    commitment_index = self.verifier.mul(
-                        commitment_index, square_commit, correction2
-                    )
-            self.output.value = result
-            self.output.commitment_index = commitment_index
-
-        elif self.gate_type == "cube":
-            result = 1
-            for input_wire in self.inputs:
-                square = self.field.mul(input_wire.value, input_wire.value)
-                cube = self.field.mul(square, input_wire.value)
-                result = self.field.mul(result, cube)
-            commitment_index = None
-            for i, _ in enumerate(self.inputs):
-                square_idx, correction1, d1, e1 = self.prover.mul(
-                    self.inputs[i].commitment_index, self.inputs[i].commitment_index
-                )
-                square_commit = self.verifier.mul(
-                    self.inputs[i].commitment_index,
-                    self.inputs[i].commitment_index,
-                    correction1,
-                )
-
-                cube_idx, correction2, d2, e2 = self.prover.mul(
-                    square_idx, self.inputs[i].commitment_index
-                )
-                cube_commit = self.verifier.mul(
-                    square_commit, self.inputs[i].commitment_index, correction2
-                )
-
-                if commitment_index is None:
-                    commitment_index = cube_commit
-                else:
-                    result_idx, correction3, d3, e3 = self.prover.mul(
-                        commitment_index, cube_commit
-                    )
-                    commitment_index = self.verifier.mul(
-                        commitment_index, cube_commit, correction3
-                    )
-            self.output.value = result
-            self.output.commitment_index = commitment_index
-
-        elif self.gate_type == "pow":
-            input_wire = self.inputs[0]
-            wires: list[Wire] = [input_wire]
-            for i in range(self.field.m - 1):
-                gate = Gate("square", [wires[i]], self.prover, self.verifier)
-                wire = Wire(gate.evaluate(), gate.output.commitment_index)
-                wires.append(wire)
-            output_gate = Gate("mul", wires, self.prover, self.verifier)
-            self.output.value = output_gate.evaluate()
-            self.output.commitment_index = output_gate.output.commitment_index
-
-        elif self.gate_type == "check_0":
-            wires: list[Wire] = []
-            i, _ = self.prover.commit(1)
-            wire_1 = Wire(1, i)
-            for wire in self.inputs:
-                gate = Gate("pow", [wire], self.prover, self.verifier)
-                wire = Wire(gate.evaluate(), gate.output.commitment_index)
-                wires.append(wire)
-
-            wires_2: list[Wire] = []
-            for wire in wires:
-                gate = Gate("add", [wire, wire_1], self.prover, self.verifier)
-                wire = Wire(gate.evaluate(), gate.output.commitment_index)
-                wires_2.append(wire)
-
-            gate = Gate("mul", wires_2, self.prover, self.verifier)
-            wire = Wire(gate.evaluate(), gate.output.commitment_index)
-
-            gate = Gate("add", [wire, wire_1], self.prover, self.verifier)
-            wire = Wire(gate.evaluate(), gate.output.commitment_index)
-            self.output.value = wire.value
-            self.output.commitment_index = wire.commitment_index
-
-        return self.output.value
+        return Wire(commitment_index)
 
 
-class Wire:
-    """Represents a wire carrying a value in the circuit."""
+class PowGate(Gate):
+    """Power gate: raises input to 2^m - 1 power."""
 
-    _id_counter = 1
+    def evaluate(self) -> Wire:
+        input_wire = self.inputs[0]
+        wires: list[Wire] = [input_wire]
+        for i in range(self.prover.field.m - 1):
+            gate = SquareGate([wires[i]], self.prover, self.verifier)
+            wire = gate.evaluate()
+            wires.append(wire)
+        output_gate = MulGate(wires, self.prover, self.verifier)
+        return output_gate.evaluate()
 
-    def __init__(self, value: int, commitment_index: int | None = None):
-        self.value: int = value
-        self.name = f"wire_{Wire._id_counter}"
-        self.id = Wire._id_counter
-        self.commitment_index = commitment_index  # VOLE commitment index, if committed
-        Wire._id_counter += 1
+
+class NumRecGate(Gate):
+    """Number reconstruction gate: reconstructs a field element from polynomial coefficients.
+
+    In an extension field F_{2^m}, elements are polynomials: \sum b_i * x^i
+    This gate computes this polynomial representation using only linear operations.
+    """
+
+    def evaluate(self) -> Wire:
+        result_idx = None
+
+        for i, coeff_wire in enumerate(self.inputs):
+            if i == 0:
+                result_idx = coeff_wire.commitment_index
+            else:
+                x_power = self.prover.field.pow(2, i)
+
+                product_idx = self.prover.scalar_mul(coeff_wire.commitment_index, x_power)
+                self.verifier.scalar_mul(coeff_wire.commitment_index, x_power)
+
+                new_result_idx = self.prover.add(result_idx, product_idx)
+                self.verifier.add(result_idx, product_idx)
+                result_idx = new_result_idx
+
+        return Wire(result_idx)
 
 
-class CircuitBuilder:
-    """Builds an arithmetic circuit for Sudoku verification."""
+class Check0Gate(Gate):
+    """Check-zero gate: returns 0 iff all inputs are 0."""
 
-    def __init__(self, prover: Prover = None, verifier: Verifier = None):
-        self.gates: list[Gate] = []
-        self.wires: list[list[Wire]] = [[] for _ in range(9)]
-        self.constraints: list[bool] = []
-        self.is_valid: bool = all(self.constraints)
-        self.prover = prover
-        self.verifier = verifier
+    def evaluate(self) -> Wire:
+        wires: list[Wire] = []
+        idx_1, di = self.prover.commit(1)
+        self.verifier.update_q(idx_1, di)
+        wire_1 = Wire(idx_1)
 
-    def create_wire(self, value: int, i: int, j: int):
-        """Create a new wire in the circuit."""
-        wire = Wire(value)
-        self.wires[i][j] = wire
-        return wire
+        for wire in self.inputs:
+            gate = PowGate([wire], self.prover, self.verifier)
+            wire = gate.evaluate()
+            wires.append(wire)
 
-    def add_gate(self, gate_type, inputs):
-        """Add a new gate to the circuit."""
-        gate = Gate(gate_type, inputs, self.prover, self.verifier)
-        self.gates.append(gate)
-        return gate
+        wires_2: list[Wire] = []
+        for wire in wires:
+            gate = AddGate([wire, wire_1], self.prover, self.verifier)
+            wire = gate.evaluate()
+            wires_2.append(wire)
 
-    def add_constraint(self, constraint):
-        """Add a constraint to the circuit."""
-        self.constraints.append(constraint)
+        gate = MulGate(wires_2, self.prover, self.verifier)
+        wire = gate.evaluate()
+
+        gate = AddGate([wire, wire_1], self.prover, self.verifier)
+        return gate.evaluate()

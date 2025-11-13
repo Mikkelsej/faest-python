@@ -94,9 +94,9 @@ class TestExtensionField:
             index_b: int = index_a + 1
 
             prover_c = prover.add(index_b, index_a)
-            verifier_c = verifier.add(index_a, index_b)
+            verifier.add(index_a, index_b)
 
-            assert verifier.q[verifier_c] == self.field.add(prover.v[prover_c], prover.u[prover_c] * delta)
+            assert verifier.q[prover_c] == self.field.add(prover.v[prover_c], prover.u[prover_c] * delta)
 
     def vole_mul(self, prover: Prover, verifier: Verifier) -> None:
         for index_a in range(100):
@@ -114,6 +114,6 @@ class TestExtensionField:
 
         verifier.update_q(i, di)
 
-        wi, vi, index = prover.open(1, prover.v[i], i)
+        index, wi, vi = prover.open(i)
 
         assert verifier.check_open(wi, vi, index)

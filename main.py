@@ -2,13 +2,15 @@
 
 from field import ExtensionField
 from prover import Prover
+from sudoku_circuit import SudokuCircuit
+from sudoku_generator import SudokuGenerator
 from verifier import Verifier
 from vole import Vole
 
 
 def main() -> None:
     """Does main stuff"""
-    length: int = 1000
+    length: int = 1500
     field: ExtensionField = ExtensionField(8)
 
     vole: Vole = Vole(field, length)
@@ -16,41 +18,20 @@ def main() -> None:
     alice: Prover = Prover(vole)
     bob: Verifier = Verifier(vole)
 
-    w = 1
-    i, di = alice.commit(w)
-    bob.update_q(i, di)
-    wi, vi, i = alice.open(w, alice.v[0], 0)
-    #print(f"{bob.check_open(wi, vi, i)} for wi={wi}")
+    solved_sudoku = SudokuGenerator().solution
 
+    circuit = SudokuCircuit(alice, bob, vole)
 
-    value = 1
-    result = 0
-    for i in range(1, 10):
-        square = field.mul(i, i)
-        result = field.add(result, square)
-    result = field.add(value, result)
-    result1 = result
+    circuit.commit_sudoku(solved_sudoku)
 
-    value = 73
-    result = 0
-    for i in range(1, 10):
-        square = field.mul(field.mul(i, i), i)
-        result = field.add(result, square)
-    result = field.add(value, result)
-    result2 = result
-    #print(field.add(result1, result2))
+    print("Sudoku committed:")
+    for row in circuit.input_sudoku:
+        for wire in row:
+            print(alice.u[wire.commitment_index], end=" ")
+        print()
 
-    bit_length = 4
-    nums = field.bit_dec(9, bit_length)
-    #print(nums)
-    num = field.num_rec(bit_length, nums)
-    #print(num)
+    print("Is valid:", circuit.is_valid())
 
-    for i in range(256):
-        num = field.pow(i, 255)
-        print(num)
-        num2 = field.pow255(i)
-        print(num2)
 
 if __name__ == "__main__":
     main()
