@@ -80,7 +80,7 @@ class Verifier:
 
         return False
 
-    def add(self, index_a: int, index_b: int) -> int:
+    def add(self, index_a: int, index_b: int) -> None:
         """Add two committed values and return the result index
 
         Performs homomorphic addition: q[c] = q[a] + q[b]
@@ -89,9 +89,6 @@ class Verifier:
         Args:
             index_a (int): index of the first value
             index_b (int): index of the second value
-
-        Returns:
-            int: index c where the sum is stored
         """
         c = self.index
         self.index += 1
@@ -99,9 +96,7 @@ class Verifier:
         # q[c] = q[a] + q[b] (addition is linear, no correction needed)
         self.q[c] = self.field.add(self.q[index_a], self.q[index_b])
 
-        return c
-
-    def sub(self, index_a: int, index_b: int) -> int:
+    def sub(self, index_a: int, index_b: int) -> None:
         """Subtract two committed values (a - b) and return the result index
 
         Performs homomorphic subtraction: q[c] = q[a] - q[b]
@@ -110,9 +105,6 @@ class Verifier:
         Args:
             index_a (int): index of the first value (minuend)
             index_b (int): index of the second value (subtrahend)
-
-        Returns:
-            int: index c where the difference is stored
         """
         c = self.index
         self.index += 1
@@ -120,9 +112,7 @@ class Verifier:
         # q[c] = q[a] - q[b] (subtraction is linear, no correction needed)
         self.q[c] = self.field.sub(self.q[index_a], self.q[index_b])
 
-        return c
-
-    def mul(self, index_a: int, index_b: int, correction: int) -> int:
+    def mul(self, index_a: int, index_b: int, correction: int) -> None:
         """Allocate result index and apply correction for multiplication
 
         Multiplication is not linear, so the prover must send a correction value.
@@ -132,9 +122,6 @@ class Verifier:
             index_a (int): index of the first value
             index_b (int): index of the second value
             correction (int): correction value from the prover
-
-        Returns:
-            int: index c where the product is stored
         """
         c = self.index
         self.index += 1
@@ -142,7 +129,6 @@ class Verifier:
         # Apply the correction to q[c]
         self.update_q(c, correction)
 
-        return c
 
     def check_mul(self, index_a: int, index_b: int, index_c: int, d: int, e: int) -> bool:
         """Verify that a multiplication was performed correctly
