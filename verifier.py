@@ -112,6 +112,26 @@ class Verifier:
         # q[c] = q[a] - q[b] (subtraction is linear, no correction needed)
         self.q[c] = self.field.sub(self.q[index_a], self.q[index_b])
 
+    def scalar_mul(self, index_a: int, scalar: int) -> None:
+        """Multiply a committed value by a public constant (scalar)
+
+        This is a linear operation requiring no communication with the prover.
+        Computes q[c] = scalar * q[a] since:
+        q[c] = v[c] + Delta * u[c]
+             = scalar * v[a] + Delta * (scalar * u[a])
+             = scalar * (v[a] + Delta * u[a])
+             = scalar * q[a]
+
+        Args:
+            index_a (int): index of the value to multiply
+            scalar (int): public constant to multiply by
+        """
+        c = self.index
+        self.index += 1
+
+        # q[c] = scalar * q[a] (scalar multiplication is linear, no correction needed)
+        self.q[c] = self.field.mul(scalar, self.q[index_a])
+
     def mul(self, index_a: int, index_b: int, correction: int) -> None:
         """Allocate result index and apply correction for multiplication
 
