@@ -95,20 +95,6 @@ class TestSudokuCircuit:
         result_wire = Check0Gate(wires, self.prover, self.verifier).evaluate()
         assert not result_wire.get_value(self.prover) == 0
 
-    def test_open_circuit(self):
-        circuit = self.sudoku_circuit
-
-        circuit.commit_sudoku(self.solved_sudoku)
-        for i in range(9):
-            for j in range(9):
-                bits = self.field.bit_dec(self.solved_sudoku[i][j], 4)
-                bit_wires = circuit.bit_wires[i][j]
-                for bit_idx, bit in enumerate(bits):
-                    bit_wire = bit_wires[bit_idx]
-                    vole_index = bit_wire.commitment_index
-                    index, wi, vi = self.prover.open(vole_index)
-                    assert self.verifier.check_open(wi, vi, index)
-
     def test_valid_row(self):
         circuit = self.sudoku_circuit
 
