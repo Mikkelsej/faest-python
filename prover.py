@@ -23,8 +23,8 @@ class Prover:
         self.field: ExtensionField = vole.field
         self.length: int = vole.length
 
-        self.u: list[int]
-        self.v: list[int]
+        self.u: list[int] = []
+        self.v: list[int] = []
 
         self.index: int = 0
 
@@ -69,18 +69,17 @@ class Prover:
 
         return i, di
 
-    def open(self, wi: int, vi: int, index: int) -> tuple[int, int, int]:
+    def open(self, index: int) -> tuple[int, int, int]:
         """Open a commitment by revealing the underlying values
 
         Args:
-            wi (int): the w value at the commitment index
-            vi (int): the v value at the commitment index
-            index (int): the commitment index
+            index (int): the commitment index to open
 
         Returns:
-            tuple[int, int, int]: (wi, vi, index) - the opened commitment values
+            tuple[int, int, int]: (index, u_i, v_i) - the opened commitment values
+                                 where u_i and v_i are the prover's secret values
         """
-        return wi, vi, index
+        return index, self.u[index], self.v[index]
 
     def add(self, a: int, b: int) -> int:
         """Add two committed values and return the result index
@@ -121,6 +120,29 @@ class Prover:
 
         self.v[c] = self.field.sub(self.v[a], self.v[b])
         self.u[c] = self.field.sub(self.u[a], self.u[b])
+
+        return c
+
+    def scalar_mul(self, a: int, scalar: int) -> int:
+        """Multiply a committed value by a public constant (scalar)
+
+        This is a linear operation requiring no communication with the verifier.
+        Computes w[c] = scalar * w[a] by setting:
+        - u[c] = scalar * u[a]
+        - v[c] = scalar * v[a]
+
+        Args:
+            a (int): index of the value to multiply
+            scalar (int): public constant to multiply by
+
+        Returns:
+            int: index c where the result is stored
+        """
+        c = self.index
+        self.index += 1
+
+        self.u[c] = self.field.mul(scalar, self.u[a])
+        self.v[c] = self.field.mul(scalar, self.v[a])
 
         return c
 
