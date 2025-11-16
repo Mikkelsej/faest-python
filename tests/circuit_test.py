@@ -4,7 +4,7 @@ import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from circuit import Check0Gate, PowGate, Wire
+from circuit import Check0Gate, PowGate, Wire, NumRecGate
 from sudoku_circuit import SudokuCircuit
 from prover import Prover
 from verifier import Verifier
@@ -98,10 +98,19 @@ class TestSudokuCircuit:
     def test_valid_row(self):
         circuit = self.sudoku_circuit
 
-        circuit.commit_sudoku(self.solved_sudoku)
-        for row in circuit.input_sudoku:
-            wire = circuit.validate_wires(row)
-            assert wire.get_value(self.prover) == 0
+    def test_rec_gate(self):
+        value = self.field.get_random()
+
+        bits = self.field.bit_dec(value, self.field.m)
+        wires = []
+        for bit in bits:
+            idx, di = self.prover.commit(bit)
+            self.verifier.update_q(idx, di)
+            wires.append(Wire(idx))
+
+        gate = NumRecGate(wires, self.prover, self.verifier)
+        wire = gate.evaluate()
+        assert wire.get_value(self.prover) == value
 
     def test_valid_sudoku(self):
         circuit = self.sudoku_circuit
