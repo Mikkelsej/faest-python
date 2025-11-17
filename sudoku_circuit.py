@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
     part_sudoku = sudoku.part_sudoku
 
-    circuit = SudokuCircuit(prover, verifier, vole)
+    circuit = SudokuCircuit(prover, verifier, vole, PITValidator())
 
     solved_sudoku = sudoku.solution
 
