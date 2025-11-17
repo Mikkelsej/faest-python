@@ -112,6 +112,26 @@ class Verifier:
         # q[c] = q[a] - q[b] (subtraction is linear, no correction needed)
         self.q[c] = self.field.sub(self.q[index_a], self.q[index_b])
 
+    def add_constant(self, index_a: int, constant: int) -> None:
+        """Add a public constant to a committed value
+
+        This is a linear operation requiring no communication with the prover.
+        Computes q[c] = q[a] + Delta * constant since:
+        q[c] = v[c] + Delta * u[c]
+             = v[a] + Delta * (u[a] + constant)
+             = v[a] + Delta * u[a] + Delta * constant
+             = q[a] + Delta * constant
+
+        Args:
+            index_a (int): index of the value to add to
+            constant (int): public constant to add
+        """
+        c = self.index
+        self.index += 1
+
+        # q[c] = q[a] + Delta * constant
+        self.q[c] = self.field.add(self.q[index_a], self.field.mul(self.delta, constant))
+
     def scalar_mul(self, index_a: int, scalar: int) -> None:
         """Multiply a committed value by a public constant (scalar)
 

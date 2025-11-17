@@ -3,6 +3,7 @@ from vole import Vole
 from prover import Prover
 from verifier import Verifier
 from sudoku_generator import SudokuGenerator
+from sudoku_validator import SudokuValidator, PITValidator
 from circuit import (
     AddGate,
     NumRecGate,
@@ -16,10 +17,12 @@ class SudokuCircuit:
         prover: Prover,
         verifier: Verifier,
         vole: Vole,
+        validator: SudokuValidator
     ):
         self.prover = prover
         self.verifier = verifier
         self.vole = vole
+        self.validator = validator
         self.input_sudoku: list[list[Wire]] = [
             [Wire(0) for _ in range(9)] for _ in range(9)
         ]
@@ -145,10 +148,9 @@ class SudokuCircuit:
                 self.create_wire(bit_wires, i, j)
 
     def validate_wires(self, wires: list[Wire]) -> Wire:
-        """Validate that wires represent a permutation (1..9)using PIT.
+        """Validate that wires represent a permutation (1..9).
 
-        Computes for the given wires and compares to the expected polynomial.
-        Returns a wire that should be 0 if the multiset is correct.
+        Delegates to the configured validator strategy.
 
         Args:
             wires: List of 9 wires representing values in a row/column/box
@@ -156,53 +158,17 @@ class SudokuCircuit:
         Returns:
             Wire that evaluates to 0 if and only if the permutation is valid
         """
-        result_idx = self.prover.sub(self.challenge_wire.commitment_index, wires[0].commitment_index)
-        self.verifier.sub(self.challenge_wire.commitment_index, wires[0].commitment_index)
-
-        for i in range(1, 9):
-            diff_idx = self.prover.sub(self.challenge_wire.commitment_index, wires[i].commitment_index)
-            self.verifier.sub(self.challenge_wire.commitment_index, wires[i].commitment_index)
-
-            result_idx, correction, d, e = self.prover.mul(result_idx, diff_idx)
-            self.verifier.mul(result_idx, diff_idx, correction)
-
-        result_wire = Wire(result_idx)
-        diff_gate = AddGate([result_wire, self.expected_poly_wire], self.prover, self.verifier)
-        return diff_gate.evaluate()
+        return self.validator.validate_wires(wires, self)
 
     def is_valid(self) -> bool:
-        """Validate the entire sudoku puzzle by opening 27 validation values.
+        """Validate the entire sudoku puzzle.
+
+        Delegates to the configured validator strategy.
 
         Returns:
-            True if all 27 validations (9 rows, 9 columns, 9 boxes) pass.
-            False if any validation fails.
+            True if the sudoku is valid, False otherwise.
         """
-        valid_wires = []
-
-        for i in range(9):
-            row = self.get_row_wires(i)
-            valid = self.validate_wires(row)
-            valid_wires.append(valid)
-
-            col = self.get_column_wires(i)
-            valid = self.validate_wires(col)
-            valid_wires.append(valid)
-
-            box = self.get_box_wires(i)
-            valid = self.validate_wires(box)
-            valid_wires.append(valid)
-
-        for idx, valid_wire in enumerate(valid_wires):
-            vole_index = valid_wire.commitment_index
-            opened_index, wi, opened_vi = self.prover.open(vole_index)
-
-            if not self.verifier.check_open(wi, opened_vi, opened_index):
-                return False
-
-            if wi != 0:
-                return False
-
-        return True
+        return self.validator.is_valid(self)
 
 if __name__ == "__main__":
     field = ExtensionField(8)

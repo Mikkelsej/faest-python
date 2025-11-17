@@ -123,6 +123,29 @@ class Prover:
 
         return c
 
+    def add_constant(self, a: int, constant: int) -> int:
+        """Add a public constant to a committed value
+
+        This is a linear operation requiring no communication with the verifier.
+        Computes w[c] = w[a] + constant by setting:
+        - u[c] = u[a] + constant
+        - v[c] = v[a]
+
+        Args:
+            a (int): index of the value to add to
+            constant (int): public constant to add
+
+        Returns:
+            int: index c where the result is stored
+        """
+        c = self.index
+        self.index += 1
+
+        self.u[c] = self.field.add(self.u[a], constant)
+        self.v[c] = self.v[a]
+
+        return c
+
     def scalar_mul(self, a: int, scalar: int) -> int:
         """Multiply a committed value by a public constant (scalar)
 

@@ -2,6 +2,8 @@ import sys
 import os
 import pytest
 
+from sudoku_validator import PITValidator
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from circuit import Check0Gate, PowGate, Wire, NumRecGate
@@ -21,7 +23,8 @@ class TestSudokuCircuit:
         self.vole = Vole(self.field, 20000)
         self.prover = Prover(self.vole)
         self.verifier = Verifier(self.vole)
-        self.sudoku_circuit = SudokuCircuit(self.prover, self.verifier, self.vole)
+        self.validator = PITValidator()
+        self.sudoku_circuit = SudokuCircuit(self.prover, self.verifier, self.vole, self.validator)
         generator = SudokuGenerator()
         self.part_sudoku = generator.part_sudoku
         self.solved_sudoku = generator.solution
@@ -95,9 +98,6 @@ class TestSudokuCircuit:
         result_wire = Check0Gate(wires, self.prover, self.verifier).evaluate()
         assert not result_wire.get_value(self.prover) == 0
 
-    def test_valid_row(self):
-        circuit = self.sudoku_circuit
-
     def test_rec_gate(self):
         value = self.field.get_random()
 
@@ -142,7 +142,7 @@ class TestSudokuCircuit:
         vole = Vole(self.field, 20000)
         prover = Prover(vole)
         verifier = Verifier(vole)
-        circuit = SudokuCircuit(prover, verifier, vole)
+        circuit = SudokuCircuit(prover, verifier, vole, self.validator)
 
         circuit.commit_sudoku(solved_sudoku)
         result = circuit.is_valid()
@@ -213,25 +213,25 @@ class TestSudokuCircuit:
             vole1 = Vole(self.field, 4000)
             prover1 = Prover(vole1)
             verifier1 = Verifier(vole1)
-            circuit1 = SudokuCircuit(prover1, verifier1, vole1)
-            false_negatives.append(self.invalid_sudoku_duplicate_in_column(circuit1, prover1))
+            circuit1 = SudokuCircuit(prover1, verifier1, vole1, self.validator)
+            false_negatives.append(self.invalid_sudoku_duplicate_in_column(circuit1))
 
             vole2 = Vole(self.field, 4000)
             prover2 = Prover(vole2)
             verifier2 = Verifier(vole2)
-            circuit2 = SudokuCircuit(prover2, verifier2, vole2)
-            false_negatives.append(self.invalid_sudoku_duplicate_in_box(circuit2, prover2))
+            circuit2 = SudokuCircuit(prover2, verifier2, vole2, self.validator)
+            false_negatives.append(self.invalid_sudoku_duplicate_in_box(circuit2))
 
             vole3 = Vole(self.field, 4000)
             prover3 = Prover(vole3)
             verifier3 = Verifier(vole3)
-            circuit3 = SudokuCircuit(prover3, verifier3, vole3)
+            circuit3 = SudokuCircuit(prover3, verifier3, vole3, self.validator)
             false_negatives.append(not self.all_rows_columns_boxes_individually(circuit3, prover3))
 
         prob_false_negatives = false_negatives.count(True) / len(false_negatives)
         assert prob_false_negatives < 0.05
 
-    def invalid_sudoku_duplicate_in_column(self, circuit, prover):
+    def invalid_sudoku_duplicate_in_column(self, circuit):
         """Test that a sudoku with duplicates in a column is invalid."""
         solved_sudoku = [row[:] for row in self.solved_sudoku]
         # Make sudoku invalid by duplicating a value in the first column
@@ -241,7 +241,7 @@ class TestSudokuCircuit:
         result = circuit.is_valid()
         return result
 
-    def invalid_sudoku_duplicate_in_box(self, circuit, prover):
+    def invalid_sudoku_duplicate_in_box(self, circuit):
         """Test that a sudoku with duplicates in a 3x3 box is invalid."""
         solved_sudoku = [row[:] for row in self.solved_sudoku]
         # Make sudoku invalid by duplicating a value in the first box
