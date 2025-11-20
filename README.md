@@ -4,7 +4,7 @@ From the file compareValidationMethods, we can see that the using PIT is requiri
 
 # Backlog
 
-Implement public values (possibly with scalar_mul)
+Implement public values in the sudoku, such that the verifier knows it is the right sudoku which has been commited to (possibly with scalar_mul)
 
 Complete readme with instructions as to how this is implemented and works
 
@@ -14,6 +14,8 @@ Instead of opening 27 values, use Schwartz-Zippel and PIT again.
 
 Rewrite documentation where it is necessary.
 
-Use higher securiry parameter.
+Use higher security parameter.
 
 Decouple wire commitment?
+
+remove unused and unnecessary code. (fieldPow(255)) Create a powGate instead of square and cube. Remove powGate255.

@@ -1,6 +1,6 @@
 """Verify sudoku constraints using sum of squares and cubes for 9x9 boards"""
 from field import ExtensionField
-from itertools import permutations, combinations_with_replacement
+from itertools import permutations, product
 from typing import Tuple
 import math
 
@@ -34,7 +34,7 @@ def check_sequence(sequence, target_sq: int, target_cube: int,
     return sum_sq == target_sq and sum_cube == target_cube
 
 
-def verify_sudoku_constraints(n: int, field_bits: int = 8) -> None:
+def verify_sudoku_constraints(n: int, field_bits: int = 64) -> None:
     """Verify constraints for nxn sudoku"""
     field = ExtensionField(field_bits)
 
@@ -43,32 +43,57 @@ def verify_sudoku_constraints(n: int, field_bits: int = 8) -> None:
 
     # Check all permutations
     invalid_perms = 0
+    valid_perms = set()
     for perm in permutations(range(1, n + 1)):
+        valid_perms.add(perm)
         if not check_sequence(perm, target_sum_sq, target_sum_cube, field):
             invalid_perms += 1
             print(f"Failed permutation: {perm}")
 
-    # Check all non-permutation combinations
+    # Check all possible combinations (including non-permutations)
     false_positives = 0
-    for combo in combinations_with_replacement(range(1, n + 1), n):
-        if len(set(combo)) == n:
+    total_checked = 0
+    print(f"\nChecking all {n}^{n} = {n**n} combinations...")
+    for combo in product(range(1, n + 1), repeat=n):
+        total_checked += 1
+        # Progress indicator every million combinations
+        if total_checked % 1_000_000 == 0:
+            print(f"  Checked {total_checked:,} combinations... ({false_positives} false positives so far)")
+        # Skip if this is a valid permutation
+        if combo in valid_perms:
             continue
+        # Check if this invalid combination passes the constraints
         if check_sequence(combo, target_sum_sq, target_sum_cube, field):
             false_positives += 1
             print(f"False positive: {combo}")
 
     # Results
+    non_perm_checked = total_checked - total_perms
     if invalid_perms == 0 and false_positives == 0:
-        print(f"\n{n}x{n} constraints verified: all {total_perms} permutations pass, no false positives")
+        print(f"\n{n}x{n} constraints verified:")
+        print(f"  All {total_perms} permutations pass")
+        print(f"  No false positives among {non_perm_checked} non-permutation combinations")
+        print(f"  Total combinations checked: {total_checked}")
     else:
         print(f"\nConstraints failed:")
         if invalid_perms > 0:
-            print(f"  {invalid_perms} valid permutations failed")
+            print(f"  {invalid_perms}/{total_perms} valid permutations failed")
         if false_positives > 0:
-            print(f"  {false_positives} invalid multisets passed")
+            print(f"  {false_positives}/{non_perm_checked} invalid combinations passed (false positives)")
+        print(f"  Total combinations checked: {total_checked}")
 
 
 def main() -> None:
+    # Test with smaller values first
+    print("Testing n=3 (fast test):")
+    verify_sudoku_constraints(3)
+
+    print("\n" + "="*60)
+    print("Testing n=4:")
+    verify_sudoku_constraints(4)
+
+    print("\n" + "="*60)
+    print("Testing n=9 (this will take a while - checking ~387 million combinations):")
     verify_sudoku_constraints(9)
 
 
