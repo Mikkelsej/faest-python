@@ -13,5 +13,3 @@ Make expected polynomial public using field. (uses less communication and multip
 Instead of opening 27 values, use Schwartz-Zippel and PIT again.
 
 Use higher security parameter.
-
-remove unused and unnecessary code. (fieldPow(255)) Create a powGate instead of square and cube. Remove powGate255.
