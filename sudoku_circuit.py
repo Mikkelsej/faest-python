@@ -42,7 +42,7 @@ class SudokuCircuit:
         return self.challenge_wire
 
     def _compute_expected_polynomial(self) -> Wire:
-        """Compute the sum (r - i) for i=1..9.
+        """Compute the prod (r - i) for i=1..9.
         Used for polynomial identity testing.
         """
         # Start with (r - 1)
