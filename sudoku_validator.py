@@ -1,7 +1,7 @@
 """Abstract validator interface and concrete implementations for Sudoku circuit validation."""
 
 from abc import ABC, abstractmethod
-from circuit import Wire, AddGate, SquareGate, CubeGate, Check0Gate
+from circuit import Wire, AddGate, PowGate, Check0Gate
 
 
 class SudokuValidator(ABC):
@@ -125,10 +125,10 @@ class Check0Validator(SudokuValidator):
         cubed_wires: list[Wire] = []
 
         for wire in wires:
-            square_gate = SquareGate([wire], circuit.prover, circuit.verifier)
+            square_gate = PowGate(wire, circuit.prover, circuit.verifier, 2)
             squared_wires.append(square_gate.evaluate())
 
-            cube_gate = CubeGate([wire], circuit.prover, circuit.verifier)
+            cube_gate = PowGate(wire, circuit.prover, circuit.verifier, 3)
             cubed_wires.append(cube_gate.evaluate())
 
         add_gate_square = AddGate(squared_wires, circuit.prover, circuit.verifier)

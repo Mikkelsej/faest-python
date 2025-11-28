@@ -19,8 +19,9 @@ class TestSudokuCircuit:
     @pytest.fixture(autouse=True)
     def setup(self) -> None:
         self.field = ExtensionField(8)
-        # Increased VOLE capacity for num_rec gate which uses more commitments
-        self.vole = Vole(self.field, 20000)
+        # Increased VOLE capacity for PowGate which uses repeated multiplication
+        # For power=255, we need 254 multiplications per operation
+        self.vole = Vole(self.field, 100000)
         self.prover = Prover(self.vole)
         self.verifier = Verifier(self.vole)
         self.validator = PITValidator()
@@ -67,14 +68,14 @@ class TestSudokuCircuit:
             idx, di = self.prover.commit(i)
             self.verifier.update_q(idx, di)
             wire = Wire(idx)
-            result_wire = PowGate([wire], self.prover, self.verifier).evaluate()
+            result_wire = PowGate(wire, self.prover, self.verifier, 2**self.field.m - 1).evaluate()
             assert result_wire.get_value(self.prover) == 1
 
         # Test with value 0
         idx, di = self.prover.commit(0)
         self.verifier.update_q(idx, di)
         wire = Wire(idx)
-        result_wire = PowGate([wire], self.prover, self.verifier).evaluate()
+        result_wire = PowGate(wire, self.prover, self.verifier, 2**self.field.m - 1).evaluate()
         assert result_wire.get_value(self.prover) == 0
 
     def test_check_0_gate_valid(self):

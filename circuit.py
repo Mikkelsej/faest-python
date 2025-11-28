@@ -60,66 +60,39 @@ class MulGate(Gate):
         return Wire(commitment_index)
 
 
-class SquareGate(Gate):
-    """Square gate: output = product of squares of all inputs."""
-
-    def evaluate(self) -> Wire:
-        commitment_index = None
-        for i, _ in enumerate(self.inputs):
-            input_idx = self.inputs[i].commitment_index
-            square_idx, correction, d, e = self.prover.mul(input_idx, input_idx)
-            self.verifier.mul(input_idx, input_idx, correction)
-
-            if commitment_index is None:
-                commitment_index = square_idx
-            else:
-                result_idx, correction2, d2, e2 = self.prover.mul(
-                    commitment_index, square_idx
-                )
-                self.verifier.mul(commitment_index, square_idx, correction2)
-                commitment_index = result_idx
-
-        return Wire(commitment_index)
-
-
-class CubeGate(Gate):
-    """Cube gate: output = product of cubes of all inputs."""
-
-    def evaluate(self) -> Wire:
-        commitment_index = None
-        for i, _ in enumerate(self.inputs):
-            input_idx = self.inputs[i].commitment_index
-
-            square_idx, correction1, d1, e1 = self.prover.mul(input_idx, input_idx)
-            self.verifier.mul(input_idx, input_idx, correction1)
-
-            cube_idx, correction2, d2, e2 = self.prover.mul(square_idx, input_idx)
-            self.verifier.mul(square_idx, input_idx, correction2)
-
-            if commitment_index is None:
-                commitment_index = cube_idx
-            else:
-                result_idx, correction3, d3, e3 = self.prover.mul(
-                    commitment_index, cube_idx
-                )
-                self.verifier.mul(commitment_index, cube_idx, correction3)
-                commitment_index = result_idx
-
-        return Wire(commitment_index)
-
-
 class PowGate(Gate):
-    """Power gate: raises input to 2^m - 1 power."""
+    """Power gate: raises a single input to a given power.
+
+    Computes input^power
+    """
+
+    def __init__(self, input_wire: Wire, prover: Prover, verifier: Verifier, power: int):
+        super().__init__([input_wire], prover, verifier)
+        self.power = power
 
     def evaluate(self) -> Wire:
-        input_wire = self.inputs[0]
-        wires: list[Wire] = [input_wire]
-        for i in range(self.prover.field.m - 1):
-            gate = SquareGate([wires[i]], self.prover, self.verifier)
-            wire = gate.evaluate()
-            wires.append(wire)
-        output_gate = MulGate(wires, self.prover, self.verifier)
-        return output_gate.evaluate()
+        if self.power == 0:
+            # x^0 = 1
+            idx, di = self.prover.commit(1)
+            self.verifier.update_q(idx, di)
+            return Wire(idx)
+
+        if self.power == 1:
+            # x^1 = x
+            return self.inputs[0]
+
+        # For power >= 2, use repeated multiplication
+        # Start with the base value
+        result_idx = self.inputs[0].commitment_index
+        base_idx = self.inputs[0].commitment_index
+
+        # Multiply (power - 1) times to get base^power
+        for _ in range(self.power - 1):
+            old_result_idx = result_idx
+            result_idx, correction, d, e = self.prover.mul(old_result_idx, base_idx)
+            self.verifier.mul(old_result_idx, base_idx, correction)
+
+        return Wire(result_idx)
 
 
 class NumRecGate(Gate):
@@ -158,7 +131,7 @@ class Check0Gate(Gate):
         wire_1 = Wire(idx_1)
 
         for wire in self.inputs:
-            gate = PowGate([wire], self.prover, self.verifier)
+            gate = PowGate(wire, self.prover, self.verifier, 2**self.prover.field.m - 1)
             wire = gate.evaluate()
             wires.append(wire)
 

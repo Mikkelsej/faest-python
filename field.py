@@ -139,34 +139,3 @@ class ExtensionField:
             int: random bit (0 or 1)
         """
         return random.randint(0, 1)
-
-    def pow255(self, a):
-        """Compute a^255 in the field using optimized squaring and multiplication
-
-        This is an optimized implementation that computes a^255 using only 7 squarings
-        and 7 multiplications, instead of the naive 254 multiplications.
-
-        Args:
-            a (int): base value
-
-        Returns:
-            int: a^255 mod irreducible polynomial
-        """
-        a2 = self.mul(a, a)        # a^2
-        a4 = self.mul(a2, a2)      # a^4
-        a8 = self.mul(a4, a4)      # a^8
-        a16 = self.mul(a8, a8)     # a^16
-        a32 = self.mul(a16, a16)   # a^32
-        a64 = self.mul(a32, a32)   # a^64
-        a128 = self.mul(a64, a64)  # a^128
-
-        # Multiply them all: 128+64+32+16+8+4+2+1 = 255
-        result = self.mul(a128, a64)
-        result = self.mul(result, a32)
-        result = self.mul(result, a16)
-        result = self.mul(result, a8)
-        result = self.mul(result, a4)
-        result = self.mul(result, a2)
-        result = self.mul(result, a)
-
-        return result
