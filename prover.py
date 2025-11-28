@@ -26,7 +26,11 @@ class Prover:
         self.u: list[int] = []
         self.v: list[int] = []
 
+        # Index for committed values (used by commit and mul)
         self.index: int = 0
+
+        self.temp_start: int = vole.length//2
+        self.temp_index: int = self.temp_start
 
         vole.initialize_prover(self)
 
@@ -45,6 +49,20 @@ class Prover:
             v (list[int]): vector of field elements representing the second component
         """
         self.v = v
+
+    def _get_temp_index(self) -> int:
+        """Get next temporary index for linear operations
+
+        Temporary indices cycle through the temp region [temp_start, length).
+        This allows reusing VOLE elements for intermediate linear computations
+        Returns:
+            int: next available temporary index
+        """
+        idx = self.temp_index
+        self.temp_index += 1
+        if self.temp_index >= self.length:
+            self.temp_index = self.temp_start
+        return idx
 
     def commit(self, w: int) -> tuple[int, int]:
         """Commit to a value w at the current index
@@ -87,6 +105,8 @@ class Prover:
         Performs homomorphic addition: w[c] = w[a] + w[b]
         This is achieved by setting u[c] = u[a] + u[b] and v[c] = v[a] + v[b]
 
+        Uses temporary storage since addition is linear
+
         Args:
             a (int): index of the first value
             b (int): index of the second value
@@ -94,8 +114,7 @@ class Prover:
         Returns:
             int: index c where the sum is stored
         """
-        c = self.index
-        self.index += 1
+        c = self._get_temp_index()
 
         self.v[c] = self.field.add(self.v[a], self.v[b])
         self.u[c] = self.field.add(self.u[a], self.u[b])
@@ -108,6 +127,8 @@ class Prover:
         Performs homomorphic subtraction: w[c] = w[a] - w[b]
         This is achieved by setting u[c] = u[a] - u[b] and v[c] = v[a] - v[b]
 
+        Uses temporary storage since subtraction is linear
+
         Args:
             a (int): index of the first value (minuend)
             b (int): index of the second value (subtrahend)
@@ -115,8 +136,7 @@ class Prover:
         Returns:
             int: index c where the difference is stored
         """
-        c = self.index
-        self.index += 1
+        c = self._get_temp_index()
 
         self.v[c] = self.field.sub(self.v[a], self.v[b])
         self.u[c] = self.field.sub(self.u[a], self.u[b])
@@ -131,6 +151,8 @@ class Prover:
         - u[c] = u[a] + constant
         - v[c] = v[a]
 
+        Uses temporary storage since this is a linear operation.
+
         Args:
             a (int): index of the value to add to
             constant (int): public constant to add
@@ -138,8 +160,7 @@ class Prover:
         Returns:
             int: index c where the result is stored
         """
-        c = self.index
-        self.index += 1
+        c = self._get_temp_index()
 
         self.u[c] = self.field.add(self.u[a], constant)
         self.v[c] = self.v[a]
@@ -154,6 +175,8 @@ class Prover:
         - u[c] = scalar * u[a]
         - v[c] = scalar * v[a]
 
+        Uses temporary storage since this is a linear operation.
+
         Args:
             a (int): index of the value to multiply
             scalar (int): public constant to multiply by
@@ -161,8 +184,7 @@ class Prover:
         Returns:
             int: index c where the result is stored
         """
-        c = self.index
-        self.index += 1
+        c = self._get_temp_index()
 
         self.u[c] = self.field.mul(scalar, self.u[a])
         self.v[c] = self.field.mul(scalar, self.v[a])
