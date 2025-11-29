@@ -43,8 +43,8 @@ class PITValidator(SudokuValidator):
     def validate_wires(self, wires: list[Wire], circuit) -> Wire:
         """Validate that wires represent a permutation (1..9) using PIT.
 
-        Computes \prod(r - x_i) for the given wires and compares to the expected
-        polynomial \prod(r - i) for i=1..9.
+        Computes \\prod(r - x_i) for the given wires and compares to the expected
+        polynomial \\prod(r - i) for i=1..9.
 
         Args:
             wires: List of 9 wires representing values in a row/column/box
@@ -55,21 +55,8 @@ class PITValidator(SudokuValidator):
         """
         prover = circuit.prover
         verifier = circuit.verifier
-        challenge_wire = circuit.challenge_wire
 
-        # Compute \prod(r - x_i) for the wires
-        result_idx = prover.sub(challenge_wire.commitment_index, wires[0].commitment_index)
-        verifier.sub(challenge_wire.commitment_index, wires[0].commitment_index)
-
-        for i in range(1, 9):
-            diff_idx = prover.sub(challenge_wire.commitment_index, wires[i].commitment_index)
-            verifier.sub(challenge_wire.commitment_index, wires[i].commitment_index)
-
-            result_idx, correction, d, e = prover.mul(result_idx, diff_idx)
-            verifier.mul(result_idx, diff_idx, correction)
-
-        # Compare to expected polynomial: \prod(r - i) for i=1..9
-        result_wire = Wire(result_idx)
+        result_wire = self.calculate_expected_poly(wires, circuit)
         diff_gate = AddGate([result_wire, circuit.expected_poly_wire], prover, verifier)
         return diff_gate.evaluate()
 
@@ -102,18 +89,78 @@ class PITValidator(SudokuValidator):
             valid = self.validate_wires(box, circuit)
             valid_wires.append(valid)
 
-        # Open all validation wires and check they are all 0
-        for idx, valid_wire in enumerate(valid_wires):
-            vole_index = valid_wire.commitment_index
-            opened_index, wi, opened_vi = prover.open(vole_index)
+        result_wire = self.calculate_random_linear_combination(valid_wires, circuit)
 
-            if not verifier.check_open(wi, opened_vi, opened_index):
-                return False
+        vole_index = result_wire.commitment_index
+        opened_index, wi, opened_vi = prover.open(vole_index)
+        if not verifier.check_open(wi, opened_vi, opened_index):
+            return False
+        return wi == 0
 
-            if wi != 0:
-                return False
+    def calculate_expected_poly(self, wires: list[Wire], circuit) -> Wire:
+        prover = circuit.prover
+        verifier = circuit.verifier
+        challenge_wire = circuit.challenge_wire
 
-        return True
+        # Compute \prod(r - x_i) for the wires
+        result_idx = prover.sub(challenge_wire.commitment_index, wires[0].commitment_index)
+        verifier.sub(challenge_wire.commitment_index, wires[0].commitment_index)
+
+        for i in range(1, 9):
+            diff_idx = prover.sub(challenge_wire.commitment_index, wires[i].commitment_index)
+            verifier.sub(challenge_wire.commitment_index, wires[i].commitment_index)
+
+            result_idx, correction, d, e = prover.mul(result_idx, diff_idx)
+            verifier.mul(result_idx, diff_idx, correction)
+
+        # Compare to expected polynomial: \prod(r - i) for i=1..9
+        result_wire = Wire(result_idx)
+
+        return result_wire
+
+
+    def calculate_random_linear_combination(self, wires: list[Wire], circuit) -> Wire:
+        """Compute a random linear combination of wires using powers of the challenge.
+
+        Computes sum(r^i * wire_i) for i=0 to len(wires)-1, where r is the challenge.
+
+        Args:
+            wires: List of wires to combine
+            circuit: The SudokuCircuit instance
+
+        Returns:
+            Wire containing the random linear combination
+        """
+        prover = circuit.prover
+        verifier = circuit.verifier
+        challenge_wire = circuit.challenge_wire
+
+        # Start with the first wire (r^0 * wire[0] = wire[0])
+        result_idx = wires[0].commitment_index
+
+        # Keep track of the current power of r
+        power_idx = challenge_wire.commitment_index
+
+        # For each subsequent wire, compute r^i * wire[i] and add to result
+        for i in range(1, len(wires)):
+            # Multiply current power by wire[i]
+            term_idx, correction, d, e = prover.mul(power_idx, wires[i].commitment_index)
+            verifier.mul(power_idx, wires[i].commitment_index, correction)
+
+            # Add to running sum
+            new_result_idx = prover.add(result_idx, term_idx)
+            verifier.add(result_idx, term_idx)
+            result_idx = new_result_idx
+
+            # Update power: power = power * r (for next iteration)
+            if i < len(wires) - 1:
+                new_power_idx, correction, d, e = prover.mul(power_idx, challenge_wire.commitment_index)
+                verifier.mul(power_idx, challenge_wire.commitment_index, correction)
+                power_idx = new_power_idx
+
+        return Wire(result_idx)
+
+
 
 class Check0Validator(SudokuValidator):
     """Check-zero validator."""

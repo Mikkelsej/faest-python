@@ -26,11 +26,6 @@ class Verifier:
         # Index for committed values (used by commit and mul)
         self.index: int = 0
 
-        # Temporary storage for linear operations
-        # Reserve half of VOLE for temporary storage
-        self.temp_start: int = vole.length // 2
-        self.temp_index: int = self.temp_start
-
         vole.initialize_verifier(self)
 
     def set_delta(self, delta: int) -> None:
@@ -49,20 +44,6 @@ class Verifier:
         """
         self.q = q
 
-    def _get_temp_index(self) -> int:
-        """Get next temporary index for linear operations
-
-        Temporary indices cycle through the temp region [temp_start, length).
-        This allows reusing VOLE elements for intermediate linear computations
-
-        Returns:
-            int: next available temporary index
-        """
-        idx = self.temp_index
-        self.temp_index += 1
-        if self.temp_index >= self.vole.length:
-            self.temp_index = self.temp_start  # Wrap around
-        return idx
 
     def update_q(self, index: int, di: int) -> None:
         """Update q[i] with a correction value from the prover
@@ -109,13 +90,12 @@ class Verifier:
         Performs homomorphic addition: q[c] = q[a] + q[b]
         This works because addition is linear in the commitment scheme.
 
-        Uses temporary storage since addition is linear
-
         Args:
             index_a (int): index of the first value
             index_b (int): index of the second value
         """
-        c = self._get_temp_index()
+        c = self.index
+        self.index += 1
 
         # q[c] = q[a] + q[b] (addition is linear, no correction needed)
         self.q[c] = self.field.add(self.q[index_a], self.q[index_b])
@@ -126,13 +106,12 @@ class Verifier:
         Performs homomorphic subtraction: q[c] = q[a] - q[b]
         This works because subtraction is linear in the commitment scheme.
 
-        Uses temporary storage since subtraction is linear
-
         Args:
             index_a (int): index of the first value (minuend)
             index_b (int): index of the second value (subtrahend)
         """
-        c = self._get_temp_index()
+        c = self.index
+        self.index += 1
 
         # q[c] = q[a] - q[b] (subtraction is linear, no correction needed)
         self.q[c] = self.field.sub(self.q[index_a], self.q[index_b])
@@ -147,13 +126,12 @@ class Verifier:
              = v[a] + Delta * u[a] + Delta * constant
              = q[a] + Delta * constant
 
-        Uses temporary storage since this is a linear operation.
-
         Args:
             index_a (int): index of the value to add to
             constant (int): public constant to add
         """
-        c = self._get_temp_index()
+        c = self.index
+        self.index += 1
 
         # q[c] = q[a] + Delta * constant
         self.q[c] = self.field.add(self.q[index_a], self.field.mul(self.delta, constant))
@@ -168,13 +146,12 @@ class Verifier:
              = scalar * (v[a] + Delta * u[a])
              = scalar * q[a]
 
-        Uses temporary storage since this is a linear operation.
-
         Args:
             index_a (int): index of the value to multiply
             scalar (int): public constant to multiply by
         """
-        c = self._get_temp_index()
+        c = self.index
+        self.index += 1
 
         # q[c] = scalar * q[a] (scalar multiplication is linear, no correction needed)
         self.q[c] = self.field.mul(scalar, self.q[index_a])

@@ -2,10 +2,9 @@ import sys
 import os
 import pytest
 
-from sudoku_validator import PITValidator
-
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
+from sudoku_validator import PITValidator
 from circuit import Check0Gate, PowGate, Wire, NumRecGate
 from sudoku_circuit import SudokuCircuit
 from prover import Prover

@@ -171,8 +171,8 @@ class SudokuCircuit:
         return self.validator.is_valid(self)
 
 if __name__ == "__main__":
-    field = ExtensionField(8)
-    vole_length = 2000
+    field = ExtensionField(64)
+    vole_length = 1400
     vole = Vole(field, vole_length)
     sudoku = SudokuGenerator()
     prover = Prover(vole)
@@ -193,4 +193,4 @@ if __name__ == "__main__":
         print()
 
     print("Is valid:", circuit.is_valid())
-    print("used: ", prover.index) # This uses 1323 indexes in the vole setup
+    print("used: ", prover.index) # 1377 indexes
