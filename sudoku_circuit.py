@@ -36,8 +36,14 @@ class SudokuCircuit:
     def _generate_challenge(self) -> Wire:
         # Generate a random challenge and commit it once for reuse
         self.challenge = self.verifier.field.get_random()
-        r_idx, di = self.prover.commit(self.challenge)
-        self.verifier.update_q(r_idx, di)
+
+        # Create a public wire with the computed polynomial value
+        zero_idx, di = self.prover.commit(0)
+        self.verifier.update_q(zero_idx, di)
+
+        r_idx = self.prover.add_constant(zero_idx, self.challenge)
+        self.verifier.add_constant(zero_idx, self.challenge)
+
         self.challenge_wire: Wire = Wire(r_idx)
         return self.challenge_wire
 
@@ -45,27 +51,21 @@ class SudokuCircuit:
         """Compute the prod (r - i) for i=1..9.
         Used for polynomial identity testing.
         """
-        # Start with (r - 1)
-        # Commit constant 1 and compute (r - 1)
-        one_idx, di1 = self.prover.commit(1)
-        self.verifier.update_q(one_idx, di1)
+        # Compute the polynomial (r-1)(r-2)...(r-9) using field arithmetic
+        # This is a public value
+        result = 1
+        for i in range(1, 10):
+            # Compute (r - i)
+            diff = self.vole.field.sub(self.challenge, i)
+            # Multiply into result
+            result = self.vole.field.mul(result, diff)
 
-        result_idx = self.prover.sub(self.challenge_wire.commitment_index, one_idx)
-        self.verifier.sub(self.challenge_wire.commitment_index, one_idx)
+        # Create a public wire with the computed polynomial value
+        zero_idx, di = self.prover.commit(0)
+        self.verifier.update_q(zero_idx, di)
 
-        # Multiply by (r - i) for i=2..9
-        for i in range(2, 10):
-            # Commit constant i
-            i_idx, dii = self.prover.commit(i)
-            self.verifier.update_q(i_idx, dii)
-
-            # Compute (r - i) using the stored challenge wire
-            diff_idx = self.prover.sub(self.challenge_wire.commitment_index, i_idx)
-            self.verifier.sub(self.challenge_wire.commitment_index, i_idx)
-
-            # Multiply result by (r - i)
-            result_idx, correction, d, e = self.prover.mul(result_idx, diff_idx)
-            self.verifier.mul(result_idx, diff_idx, correction)
+        result_idx = self.prover.add_constant(zero_idx, result)
+        self.verifier.add_constant(zero_idx, result)
 
         return Wire(result_idx)
 

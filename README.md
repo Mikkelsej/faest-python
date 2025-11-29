@@ -8,8 +8,6 @@ Implement public values in the sudoku, such that the verifier knows it is the ri
 
 Complete readme with instructions as to how this is implemented and works
 
-Make expected polynomial public using field. (uses less communication and multiplication)
-
 Instead of opening 27 values, use Schwartz-Zippel and PIT again.
 
 Use higher security parameter.
