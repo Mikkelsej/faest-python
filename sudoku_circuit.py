@@ -172,8 +172,9 @@ class SudokuCircuit:
 
 if __name__ == "__main__":
     field = ExtensionField(64)
-    vole_length = 1400
-    vole = Vole(field, vole_length)
+    vole_length = 1000
+    total_length = 2000
+    vole = Vole(field, vole_length, total_length)
     sudoku = SudokuGenerator()
     prover = Prover(vole)
     verifier = Verifier(vole)
@@ -193,4 +194,5 @@ if __name__ == "__main__":
         print()
 
     print("Is valid:", circuit.is_valid())
-    print("used: ", prover.index) # 1377 indexes
+    print(f"VOLEs used: {prover.vole_index}/{vole_length}")
+    print(f"Temp storage used: {prover.temp_index - vole_length}/{total_length - vole_length}")

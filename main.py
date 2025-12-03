@@ -11,10 +11,11 @@ from vole import Vole
 
 def main() -> None:
     """Does main stuff"""
-    length: int = 10000
+    vole_length: int = 5000
+    total_length: int = 10000
     field: ExtensionField = ExtensionField(8)
 
-    vole: Vole = Vole(field, length)
+    vole: Vole = Vole(field, vole_length, total_length)
 
     alice: Prover = Prover(vole)
     bob: Verifier = Verifier(vole)
@@ -32,7 +33,8 @@ def main() -> None:
         print()
 
     print("Is valid:", circuit.is_valid())
-    print("used: ", alice.index)
+    print(f"VOLEs used: {alice.vole_index}/{vole_length}")
+    print(f"Temp storage used: {alice.temp_index - vole_length}/{total_length - vole_length}")
 
 
 if __name__ == "__main__":

@@ -7,10 +7,11 @@ from verifier import Verifier
 from vole import Vole
 
 def get_index(validator: SudokuValidator):
-    length: int = 100000
+    vole_length: int = 50000
+    total_length: int = 100000
     field: ExtensionField = ExtensionField(8)
 
-    vole: Vole = Vole(field, length)
+    vole: Vole = Vole(field, vole_length, total_length)
 
     alice: Prover = Prover(vole)
     bob: Verifier = Verifier(vole)
@@ -21,19 +22,19 @@ def get_index(validator: SudokuValidator):
 
     circuit.commit_sudoku(solved_sudoku)
     valid = circuit.is_valid()
-    return alice.index, valid
+    return (alice.vole_index, alice.temp_index - vole_length), valid
 
 def main():
     check0_validator = Check0Validator()
     pit_validator = PITValidator()
 
-    check0_index = get_index(check0_validator)
-    pit_index = get_index(pit_validator)
+    check0_stats, check0_valid = get_index(check0_validator)
+    pit_stats, pit_valid = get_index(pit_validator)
 
 
-    print(f"Check0 Method used {check0_index[0]} prover indexes. Valid: {check0_index[1]}")
+    print(f"Check0 Method used {check0_stats[0]} fresh VOLEs + {check0_stats[1]} temp storage. Valid: {check0_valid}")
 
-    print(f"PIT Method used {pit_index[0]} prover indexes. Valid: {pit_index[1]}")
+    print(f"PIT Method used {pit_stats[0]} fresh VOLEs + {pit_stats[1]} temp storage. Valid: {pit_valid}")
 
 if __name__ == "__main__":
     main()

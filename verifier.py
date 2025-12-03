@@ -20,11 +20,15 @@ class Verifier:
         """
         self.vole = vole
         self.field = vole.field
+        self.vole_length: int = vole.vole_length
+        self.total_length: int = vole.total_length
         self.delta: int = -1
         self.q: list[int] = []
 
-        # Index for committed values (used by commit and mul)
-        self.index: int = 0
+        # Index for fresh committed values (used by commit and mul)
+        self.vole_index: int = 0
+        # Index for temporary values (used by add, sub, etc.)
+        self.temp_index: int = self.vole_length
 
         vole.initialize_verifier(self)
 
@@ -58,8 +62,8 @@ class Verifier:
         i: int = index
         qi: int = self.field.add(self.q[i], self.field.mul(di, self.delta))
         self.q[i] = qi
-        if i == self.index:
-            self.index += 1
+        if i == self.vole_index:
+            self.vole_index += 1
 
     def check_open(self, wi: int, vi: int, index: int) -> bool:
         """Verify that an opened commitment is valid
@@ -94,8 +98,8 @@ class Verifier:
             index_a (int): index of the first value
             index_b (int): index of the second value
         """
-        c = self.index
-        self.index += 1
+        c = self.temp_index
+        self.temp_index += 1
 
         # q[c] = q[a] + q[b] (addition is linear, no correction needed)
         self.q[c] = self.field.add(self.q[index_a], self.q[index_b])
@@ -110,8 +114,8 @@ class Verifier:
             index_a (int): index of the first value (minuend)
             index_b (int): index of the second value (subtrahend)
         """
-        c = self.index
-        self.index += 1
+        c = self.temp_index
+        self.temp_index += 1
 
         # q[c] = q[a] - q[b] (subtraction is linear, no correction needed)
         self.q[c] = self.field.sub(self.q[index_a], self.q[index_b])
@@ -130,8 +134,8 @@ class Verifier:
             index_a (int): index of the value to add to
             constant (int): public constant to add
         """
-        c = self.index
-        self.index += 1
+        c = self.temp_index
+        self.temp_index += 1
 
         # q[c] = q[a] + Delta * constant
         self.q[c] = self.field.add(self.q[index_a], self.field.mul(self.delta, constant))
@@ -150,8 +154,8 @@ class Verifier:
             index_a (int): index of the value to multiply
             scalar (int): public constant to multiply by
         """
-        c = self.index
-        self.index += 1
+        c = self.temp_index
+        self.temp_index += 1
 
         # q[c] = scalar * q[a] (scalar multiplication is linear, no correction needed)
         self.q[c] = self.field.mul(scalar, self.q[index_a])
@@ -167,8 +171,8 @@ class Verifier:
             index_b (int): index of the second value
             correction (int): correction value from the prover
         """
-        c = self.index
-        self.index += 1
+        c = self.vole_index
+        self.vole_index += 1
 
         # Apply the correction to q[c]
         self.update_q(c, correction)

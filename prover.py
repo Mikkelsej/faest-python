@@ -21,13 +21,16 @@ class Prover:
         """
         self.vole = vole
         self.field: ExtensionField = vole.field
-        self.length: int = vole.length
+        self.length: int = vole.total_length
+        self.vole_length: int = vole.vole_length
 
         self.u: list[int] = []
         self.v: list[int] = []
 
-        # Index for committed values (used by commit and mul)
-        self.index: int = 0
+        # Index for fresh committed values (used by commit and mul)
+        self.vole_index: int = 0
+        # Index for temporary values (used by add, sub, etc.)
+        self.temp_index: int = self.vole_length
 
         vole.initialize_prover(self)
 
@@ -61,13 +64,13 @@ class Prover:
             tuple[int, int]: (index, correction) where index is the commitment position
                            and correction is di = old_u[i] + w
         """
-        i: int = self.index
+        i: int = self.vole_index
         di: int = self.field.add(self.u[i], w)
 
         self.u[i] = w
 
         # Going to the next unused ui and wi
-        self.index += 1
+        self.vole_index += 1
 
         return i, di
 
@@ -96,8 +99,8 @@ class Prover:
         Returns:
             int: index c where the sum is stored
         """
-        c = self.index
-        self.index += 1
+        c = self.temp_index
+        self.temp_index += 1
 
         self.v[c] = self.field.add(self.v[a], self.v[b])
         self.u[c] = self.field.add(self.u[a], self.u[b])
@@ -117,8 +120,8 @@ class Prover:
         Returns:
             int: index c where the difference is stored
         """
-        c = self.index
-        self.index += 1
+        c = self.temp_index
+        self.temp_index += 1
 
         self.v[c] = self.field.sub(self.v[a], self.v[b])
         self.u[c] = self.field.sub(self.u[a], self.u[b])
@@ -140,8 +143,8 @@ class Prover:
         Returns:
             int: index c where the result is stored
         """
-        c = self.index
-        self.index += 1
+        c = self.temp_index
+        self.temp_index += 1
 
         self.u[c] = self.field.add(self.u[a], constant)
         self.v[c] = self.v[a]
@@ -163,8 +166,8 @@ class Prover:
         Returns:
             int: index c where the result is stored
         """
-        c = self.index
-        self.index += 1
+        c = self.temp_index
+        self.temp_index += 1
 
         self.u[c] = self.field.mul(scalar, self.u[a])
         self.v[c] = self.field.mul(scalar, self.v[a])
@@ -194,8 +197,8 @@ class Prover:
                 - d: linear verification component
                 - e: quadratic verification component
         """
-        c = self.index
-        self.index += 1
+        c = self.vole_index
+        self.vole_index += 1
 
         # Commit u[c] = u[a] * u[b]
         uc = self.field.mul(self.u[a], self.u[b])
