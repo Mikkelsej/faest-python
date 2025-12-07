@@ -200,6 +200,11 @@ class Verifier:
             self.field.mul(self.q[index_a], self.q[index_b]), self.field.mul(delta, self.q[index_c])
         )
 
-        rhs: int = self.field.add(self.field.mul(d, delta), e)
+        b = self.vole.get_random_vole_verifier(delta)
+
+        rhs: int = self.field.sub(
+            self.field.add(self.field.mul(d, delta), e),
+            b
+        )
 
         return lhs == rhs

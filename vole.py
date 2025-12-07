@@ -21,7 +21,6 @@ class Vole:
         Args:
             field (ExtensionField): finite field for computations
             vole_length (int): number of fresh VOLE correlations to generate
-            total_length (int): total size of the storage (vole_length + temporary variables)
         """
         self.a0 = 0
         self.a1 = 0
@@ -78,8 +77,11 @@ class Vole:
         verifier.set_q(q)
 
     def get_random_vole_prover(self):
-        self.u = [self.field.get_random_bit() for _ in range(self.vole_length)]
-        self.v = [self.field.get_random() for _ in range(self.vole_length)]
+        self.u = [self.field.get_random_bit() for _ in range(self.field.m)]
+        self.v = [self.field.get_random() for _ in range(self.field.m)]
+
+        self.a0 = 0
+        self.a1 = 0
 
         for i, ui in enumerate(self.u):
             self.a0 = self.field.add(self.a0, self.field.mul(ui, self.field.pow(2, i)))
@@ -88,11 +90,10 @@ class Vole:
 
         return self.a0, self.a1
 
-    def get_random_vole_verifier(self):
-        delta = self.field.get_random()
-        b = self.field.add(self.a0, self.field.mul(self.a1, delta))
+    def get_random_vole_verifier(self, delta):
+        b = self.field.add(self.a1, self.field.mul(self.a0, delta))
 
-        return b, delta
+        return b
 
 if __name__ == "__main__":
     length: int = 1000

@@ -215,4 +215,8 @@ class Prover:
         )
         e = self.field.mul(self.v[a], self.v[b])
 
-        return c, correction, d, e
+        a0, a1 = self.vole.get_random_vole_prover()
+        d_prime = self.field.add(d, a0)
+        e_prime = self.field.add(e, a1)
+
+        return c, correction, d_prime, e_prime
