@@ -1,7 +1,7 @@
 """Abstract validator interface and concrete implementations for Sudoku circuit validation."""
 
 from abc import ABC, abstractmethod
-from circuit import Wire, AddGate, PowGate, Check0Gate
+from circuit import Wire, AddGate, PowGate, Check0Gate, MulGate
 
 
 class SudokuValidator(ABC):
@@ -110,8 +110,11 @@ class PITValidator(SudokuValidator):
             diff_idx = prover.sub(challenge_wire.commitment_index, wires[i].commitment_index)
             verifier.sub(challenge_wire.commitment_index, wires[i].commitment_index)
 
-            result_idx, correction, d, e = prover.mul(result_idx, diff_idx)
-            verifier.mul(result_idx, diff_idx, correction)
+            result_wire = Wire(result_idx)
+            diff_wire = Wire(diff_idx)
+            gate = MulGate([result_wire, diff_wire], prover, verifier)
+            result_wire = gate.evaluate()
+            result_idx = result_wire.commitment_index
 
         # Compare to expected polynomial: \prod(r - i) for i=1..9
         result_wire = Wire(result_idx)
@@ -144,8 +147,12 @@ class PITValidator(SudokuValidator):
         # For each subsequent wire, compute r^i * wire[i] and add to result
         for i in range(1, len(wires)):
             # Multiply current power by wire[i]
-            term_idx, correction, d, e = prover.mul(power_idx, wires[i].commitment_index)
-            verifier.mul(power_idx, wires[i].commitment_index, correction)
+            # Multiply current power by wire[i]
+            power_wire = Wire(power_idx)
+            wire_i = wires[i]
+            gate = MulGate([power_wire, wire_i], prover, verifier)
+            term_wire = gate.evaluate()
+            term_idx = term_wire.commitment_index
 
             # Add to running sum
             new_result_idx = prover.add(result_idx, term_idx)
@@ -154,9 +161,10 @@ class PITValidator(SudokuValidator):
 
             # Update power: power = power * r (for next iteration)
             if i < len(wires) - 1:
-                new_power_idx, correction, d, e = prover.mul(power_idx, challenge_wire.commitment_index)
-                verifier.mul(power_idx, challenge_wire.commitment_index, correction)
-                power_idx = new_power_idx
+                power_wire = Wire(power_idx)
+                gate = MulGate([power_wire, challenge_wire], prover, verifier)
+                new_power_wire = gate.evaluate()
+                power_idx = new_power_wire.commitment_index
 
         return Wire(result_idx)
 
