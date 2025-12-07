@@ -6,7 +6,7 @@ class ExtensionField:
     _irreducible = {
         3: 0b1011,
         8: 0b100011011,  # x^8 + x^4 + x^3 + x + 1
-        64: 0x100000000000000C5
+        64: 0x1000000000000001B
     }
 
     def __init__(self, m: int) -> None:
