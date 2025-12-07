@@ -55,6 +55,8 @@ class MulGate(Gate):
                 commitment_index, next_input_index
             )
             self.verifier.mul(commitment_index, next_input_index, correction)
+            if not self.verifier.check_mul(commitment_index, next_input_index, result_idx, d, e):
+                raise Exception("Verification failed")
             commitment_index = result_idx
 
         return Wire(commitment_index)
@@ -81,24 +83,31 @@ class PowGate(Gate):
             # x^1 = x
             return self.inputs[0]
 
-        # For power >= 2, use repeated multiplication
-        # Start with the base value
-        result_idx = self.inputs[0].commitment_index
-        base_idx = self.inputs[0].commitment_index
+        idx_1, di = self.prover.commit(1)
+        self.verifier.update_q(idx_1, di)
+        result_wire = Wire(idx_1)
 
-        # Multiply (power - 1) times to get base^power
-        for _ in range(self.power - 1):
-            old_result_idx = result_idx
-            result_idx, correction, d, e = self.prover.mul(old_result_idx, base_idx)
-            self.verifier.mul(old_result_idx, base_idx, correction)
+        base_wire = self.inputs[0]
+        exp = self.power
 
-        return Wire(result_idx)
+        while exp > 0:
+            if exp % 2 == 1:
+                gate = MulGate([result_wire, base_wire], self.prover, self.verifier)
+                result_wire = gate.evaluate()
+
+            if exp > 1:
+                gate = MulGate([base_wire, base_wire], self.prover, self.verifier)
+                base_wire = gate.evaluate()
+
+            exp //= 2
+
+        return result_wire
 
 
 class NumRecGate(Gate):
     """Number reconstruction gate: reconstructs a field element from polynomial coefficients.
 
-    In an extension field F_{2^m}, elements are polynomials: \sum b_i * x^i
+    In an extension field F_{2^m}, elements are polynomials: sum(b_i * x^i)
     This gate computes this polynomial representation using only linear operations.
     """
 
