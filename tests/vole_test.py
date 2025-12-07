@@ -80,11 +80,13 @@ class TestVole:
     def get_random_vole(self):
         vole: Vole = Vole(self.field, 1000)
 
+        delta = self.field.get_random()
+
         a0, a1 = vole.get_random_vole_prover()
-        b, delta = vole.get_random_vole_verifier()
+        b = vole.get_random_vole_verifier(delta)
 
         assert 0 <= a0 <= 255
         assert 0 <= a1 <= 255
         assert 0 <= b <= 255
 
-        assert b == self.field.add(a0, self.field.mul(a1, delta))
+        assert b == self.field.add(a1, self.field.mul(a0, delta))

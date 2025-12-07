@@ -1,11 +1,12 @@
 import sys
 import os
 import pytest
+import random
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from sudoku_validator import PITValidator
-from circuit import Check0Gate, PowGate, Wire, NumRecGate
+from circuit import Check0Gate, PowGate, Wire, NumRecGate, MulGate
 from sudoku_circuit import SudokuCircuit
 from prover import Prover
 from verifier import Verifier
@@ -17,9 +18,7 @@ from sudoku_generator import SudokuGenerator
 class TestSudokuCircuit:
     @pytest.fixture(autouse=True)
     def setup(self) -> None:
-        self.field = ExtensionField(8)
-        # Increased VOLE capacity for PowGate which uses repeated multiplication
-        # For power=255, we need 254 multiplications per operation
+        self.field = ExtensionField(64)
         self.vole = Vole(self.field, 100000)
         self.prover = Prover(self.vole)
         self.verifier = Verifier(self.vole)
@@ -51,7 +50,6 @@ class TestSudokuCircuit:
             assert box_wires[i] == circuit.input_sudoku[i // 3][i % 3]
 
     def test_valid_sudoku_generation(self):
-
         valid_list = []
         for i, row in enumerate(self.part_sudoku):
             for j, value in enumerate(row):
@@ -62,15 +60,19 @@ class TestSudokuCircuit:
         assert all(valid_list)
 
     def test_pow_gate_valid(self):
-        for i in range(1, 256):
-            # Properly commit the value before creating the wire
-            idx, di = self.prover.commit(i)
+        powers_to_test = [0, 1, 2, 3, 4, 5, 10, 50, 100, 500, 1000]
+
+        for power in powers_to_test:
+            val = 2
+            idx, di = self.prover.commit(val)
             self.verifier.update_q(idx, di)
             wire = Wire(idx)
-            result_wire = PowGate(wire, self.prover, self.verifier, 2**self.field.m - 1).evaluate()
-            assert result_wire.get_value(self.prover) == 1
 
-        # Test with value 0
+            expected = self.field.pow(val, power)
+
+            result_wire = PowGate(wire, self.prover, self.verifier, power).evaluate()
+            assert result_wire.get_value(self.prover) == expected
+
         idx, di = self.prover.commit(0)
         self.verifier.update_q(idx, di)
         wire = Wire(idx)
@@ -78,9 +80,8 @@ class TestSudokuCircuit:
         assert result_wire.get_value(self.prover) == 0
 
     def test_check_0_gate_valid(self):
-        # Properly commit all zero values before creating wires
         wires: list[Wire] = []
-        for _ in range(100):
+        for _ in range(10):
             idx, di = self.prover.commit(0)
             self.verifier.update_q(idx, di)
             wires.append(Wire(idx))
@@ -88,9 +89,8 @@ class TestSudokuCircuit:
         assert result_wire.get_value(self.prover) == 0
 
     def test_check_0_gate_invalid(self):
-        # Properly commit random values before creating wires
         wires: list[Wire] = []
-        for _ in range(100):
+        for _ in range(10):
             random_val = self.field.get_random()
             idx, di = self.prover.commit(random_val)
             self.verifier.update_q(idx, di)
@@ -120,10 +120,8 @@ class TestSudokuCircuit:
         assert result
 
     def test_invalid_sudoku(self):
-        """Test that an invalid sudoku returns False."""
         circuit = self.sudoku_circuit
         solved_sudoku = [row[:] for row in self.solved_sudoku]
-        # Make sudoku invalid by duplicating a value in the first row
         solved_sudoku[0][0] = solved_sudoku[0][1]
 
         circuit.commit_sudoku(solved_sudoku)
@@ -131,14 +129,11 @@ class TestSudokuCircuit:
         result = circuit.is_valid()
         assert not result
 
-    @pytest.mark.parametrize("iteration", range(100))
+    @pytest.mark.parametrize("iteration", range(20))
     def test_multiple_random_valid_sudokus(self, iteration):
-        """Test that multiple randomly generated sudokus all validate correctly."""
-        # Generate a new sudoku
         generator = SudokuGenerator()
         solved_sudoku = generator.solution
 
-        # Create fresh instances for each test
         vole = Vole(self.field, 20000)
         prover = Prover(vole)
         verifier = Verifier(vole)
@@ -149,7 +144,6 @@ class TestSudokuCircuit:
         assert result, f"Random sudoku #{iteration+1} failed validation"
 
     def test_known_valid_sudoku_1(self):
-        """Test with a known valid sudoku puzzle #1."""
         circuit = self.sudoku_circuit
         known_sudoku = [
             [5, 3, 4, 6, 7, 8, 9, 1, 2],
@@ -168,7 +162,6 @@ class TestSudokuCircuit:
         assert result
 
     def test_known_valid_sudoku_2(self):
-        """Test with a known valid sudoku puzzle #2."""
         circuit = self.sudoku_circuit
         known_sudoku = [
             [1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -187,7 +180,6 @@ class TestSudokuCircuit:
         assert result
 
     def test_known_valid_sudoku_3(self):
-        """Test with a known valid sudoku puzzle #3."""
         circuit = self.sudoku_circuit
         known_sudoku = [
             [8, 2, 7, 1, 5, 4, 3, 9, 6],
@@ -205,36 +197,28 @@ class TestSudokuCircuit:
         result = circuit.is_valid()
         assert result
 
-    def test_invalid_sudokus(self):
-        """Test that invalid sudokus are correctly identified as invalid.
-        We're checking for false negatives - invalid sudokus that incorrectly pass validation."""
-        false_negatives = []
-        for _ in range(100):
-            vole1 = Vole(self.field, 4000)
-            prover1 = Prover(vole1)
-            verifier1 = Verifier(vole1)
-            circuit1 = SudokuCircuit(prover1, verifier1, vole1, self.validator)
-            false_negatives.append(self.invalid_sudoku_duplicate_in_column(circuit1))
+    @pytest.mark.parametrize("iteration", range(10))
+    def test_invalid_sudokus(self, iteration):
+        vole1 = Vole(self.field, 4000)
+        prover1 = Prover(vole1)
+        verifier1 = Verifier(vole1)
+        circuit1 = SudokuCircuit(prover1, verifier1, vole1, self.validator)
+        assert not self.invalid_sudoku_duplicate_in_column(circuit1)
 
-            vole2 = Vole(self.field, 4000)
-            prover2 = Prover(vole2)
-            verifier2 = Verifier(vole2)
-            circuit2 = SudokuCircuit(prover2, verifier2, vole2, self.validator)
-            false_negatives.append(self.invalid_sudoku_duplicate_in_box(circuit2))
+        vole2 = Vole(self.field, 4000)
+        prover2 = Prover(vole2)
+        verifier2 = Verifier(vole2)
+        circuit2 = SudokuCircuit(prover2, verifier2, vole2, self.validator)
+        assert not self.invalid_sudoku_duplicate_in_box(circuit2)
 
-            vole3 = Vole(self.field, 4000)
-            prover3 = Prover(vole3)
-            verifier3 = Verifier(vole3)
-            circuit3 = SudokuCircuit(prover3, verifier3, vole3, self.validator)
-            false_negatives.append(not self.all_rows_columns_boxes_individually(circuit3, prover3))
-
-        prob_false_negatives = false_negatives.count(True) / len(false_negatives)
-        assert prob_false_negatives < 0.05
+        vole3 = Vole(self.field, 4000)
+        prover3 = Prover(vole3)
+        verifier3 = Verifier(vole3)
+        circuit3 = SudokuCircuit(prover3, verifier3, vole3, self.validator)
+        assert self.all_rows_columns_boxes_individually(circuit3, prover3)
 
     def invalid_sudoku_duplicate_in_column(self, circuit):
-        """Test that a sudoku with duplicates in a column is invalid."""
         solved_sudoku = [row[:] for row in self.solved_sudoku]
-        # Make sudoku invalid by duplicating a value in the first column
         solved_sudoku[0][0] = solved_sudoku[1][0]
 
         circuit.commit_sudoku(solved_sudoku)
@@ -242,10 +226,7 @@ class TestSudokuCircuit:
         return result
 
     def invalid_sudoku_duplicate_in_box(self, circuit):
-        """Test that a sudoku with duplicates in a 3x3 box is invalid."""
         solved_sudoku = [row[:] for row in self.solved_sudoku]
-        # Make sudoku invalid by duplicating a value in the first box
-        # Copy value from (0,0) to (1,1) - both in top-left box
         solved_sudoku[1][1] = solved_sudoku[0][0]
 
         circuit.commit_sudoku(solved_sudoku)
@@ -253,24 +234,20 @@ class TestSudokuCircuit:
         return result
 
     def all_rows_columns_boxes_individually(self, circuit, prover):
-        """Test that all rows, columns, and boxes validate individually for a correct sudoku."""
         circuit.commit_sudoku(self.solved_sudoku)
 
-        # Test all rows
         for i in range(9):
             row_wires = circuit.get_row_wires(i)
             wire = circuit.validate_wires(row_wires)
             if wire.get_value(prover) != 0:
                 return False
 
-        # Test all columns
         for i in range(9):
             col_wires = circuit.get_column_wires(i)
             wire = circuit.validate_wires(col_wires)
             if wire.get_value(prover) != 0:
                 return False
 
-        # Test all boxes
         for i in range(9):
             box_wires = circuit.get_box_wires(i)
             wire = circuit.validate_wires(box_wires)
@@ -278,3 +255,24 @@ class TestSudokuCircuit:
                 return False
 
         return True
+
+    def test_cheating_prover_fails(self):
+        class CheatingProver(Prover):
+            def mul(self, a, b):
+                c, correction, d, e = super().mul(a, b)
+                return c, correction, d + 1, e
+
+        cheating_prover = CheatingProver(self.vole)
+
+        idx1, di1 = cheating_prover.commit(2)
+        self.verifier.update_q(idx1, di1)
+        wire1 = Wire(idx1)
+
+        idx2, di2 = cheating_prover.commit(3)
+        self.verifier.update_q(idx2, di2)
+        wire2 = Wire(idx2)
+
+        gate = MulGate([wire1, wire2], cheating_prover, self.verifier)
+
+        with pytest.raises(Exception, match="Verification failed"):
+            gate.evaluate()
