@@ -15,7 +15,7 @@ def main() -> None:
     total_length: int = 10000
     field: ExtensionField = ExtensionField(8)
 
-    vole: Vole = Vole(field, vole_length, total_length)
+    vole: Vole = Vole(field, vole_length)
 
     alice: Prover = Prover(vole)
     bob: Verifier = Verifier(vole)

@@ -5,7 +5,6 @@ from verifier import Verifier
 from sudoku_generator import SudokuGenerator
 from sudoku_validator import SudokuValidator, PITValidator
 from circuit import (
-    AddGate,
     NumRecGate,
     Wire,
 )
@@ -173,8 +172,7 @@ class SudokuCircuit:
 if __name__ == "__main__":
     field = ExtensionField(64)
     vole_length = 1000
-    total_length = 2000
-    vole = Vole(field, vole_length, total_length)
+    vole = Vole(field, vole_length)
     sudoku = SudokuGenerator()
     prover = Prover(vole)
     verifier = Verifier(vole)
@@ -195,4 +193,4 @@ if __name__ == "__main__":
 
     print("Is valid:", circuit.is_valid())
     print(f"VOLEs used: {prover.vole_index}/{vole_length}")
-    print(f"Temp storage used: {prover.temp_index - vole_length}/{total_length - vole_length}")
+    print(f"Temp storage used: {prover.temp_index - vole_length}/{vole.total_length - vole_length}")
