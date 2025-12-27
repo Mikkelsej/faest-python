@@ -1,12 +1,15 @@
-from field import ExtensionField
-from vole import Vole
-from prover import Prover
-from verifier import Verifier
-import sys
 import os
+import sys
+
 import pytest
 
+from field import ExtensionField
+from prover import Prover
+from verifier import Verifier
+from vole import Vole
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 
 class TestVole:
     @pytest.fixture(autouse=True)
@@ -46,7 +49,6 @@ class TestVole:
             assert 0 == ui or ui == 1
 
     def vole_add(self, prover: Prover, verifier: Verifier) -> None:
-        u: list[int] = prover.u
         delta: int = verifier.delta
 
         for index_a in range(100):
@@ -55,13 +57,15 @@ class TestVole:
             prover_c = prover.add(index_b, index_a)
             verifier.add(index_a, index_b)
 
-            assert verifier.q[prover_c] == self.field.add(prover.v[prover_c], prover.u[prover_c] * delta)
+            assert verifier.q[prover_c] == self.field.add(
+                prover.v[prover_c], prover.u[prover_c] * delta
+            )
 
     def vole_mul(self, prover: Prover, verifier: Verifier) -> None:
         for index_a in range(100):
             index_b = index_a + 1
             prover_c, correction, d, e = prover.mul(index_a, index_b)
-            verifier.mul(index_a, index_b, correction)
+            verifier.mul(correction)
             assert verifier.check_mul(index_a, index_b, prover_c, d, e)
 
     def test_commit(self):

@@ -1,11 +1,11 @@
-import sys
 import os
+import sys
+
 import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from field import ExtensionField
-
 
 
 class TestExtensionField:
@@ -52,4 +52,3 @@ class TestExtensionField:
         product = self.field.mul(a, inv_a)
         # Multiplicative identity is 1
         assert product == 1
-

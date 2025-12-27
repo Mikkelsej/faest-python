@@ -1,30 +1,22 @@
-from field import ExtensionField
-from vole import Vole
-from prover import Prover
-from verifier import Verifier
-from sudoku_generator import SudokuGenerator
-from sudoku_validator import SudokuValidator, PITValidator
 from circuit import (
     NumRecGate,
     Wire,
 )
+from field import ExtensionField
+from prover import Prover
+from sudoku_generator import SudokuGenerator
+from sudoku_validator import PITValidator, SudokuValidator
+from verifier import Verifier
+from vole import Vole
 
 
 class SudokuCircuit:
-    def __init__(
-        self,
-        prover: Prover,
-        verifier: Verifier,
-        vole: Vole,
-        validator: SudokuValidator
-    ):
+    def __init__(self, prover: Prover, verifier: Verifier, vole: Vole, validator: SudokuValidator):
         self.prover = prover
         self.verifier = verifier
         self.vole = vole
         self.validator = validator
-        self.input_sudoku: list[list[Wire]] = [
-            [Wire(0) for _ in range(9)] for _ in range(9)
-        ]
+        self.input_sudoku: list[list[Wire]] = [[Wire(0) for _ in range(9)] for _ in range(9)]
 
         self.challenge: int = 0
         self.challenge_wire: Wire = Wire(0)
@@ -168,6 +160,7 @@ class SudokuCircuit:
             True if the sudoku is valid, False otherwise.
         """
         return self.validator.is_valid(self)
+
 
 if __name__ == "__main__":
     field = ExtensionField(64)

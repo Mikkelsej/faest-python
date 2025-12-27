@@ -48,7 +48,6 @@ class Verifier:
         """
         self.q = q
 
-
     def update_q(self, index: int, di: int) -> None:
         """Update q[i] with a correction value from the prover
 
@@ -160,15 +159,13 @@ class Verifier:
         # q[c] = scalar * q[a] (scalar multiplication is linear, no correction needed)
         self.q[c] = self.field.mul(scalar, self.q[index_a])
 
-    def mul(self, index_a: int, index_b: int, correction: int) -> None:
+    def mul(self, correction: int) -> None:
         """Allocate result index and apply correction for multiplication
 
         Multiplication is not linear, so the prover must send a correction value.
         This method updates q[c] using the correction without learning the actual values.
 
         Args:
-            index_a (int): index of the first value
-            index_b (int): index of the second value
             correction (int): correction value from the prover
         """
         c = self.vole_index
@@ -176,7 +173,6 @@ class Verifier:
 
         # Apply the correction to q[c]
         self.update_q(c, correction)
-
 
     def check_mul(self, index_a: int, index_b: int, index_c: int, d: int, e: int) -> bool:
         """Verify that a multiplication was performed correctly
@@ -202,9 +198,6 @@ class Verifier:
 
         b = self.vole.get_random_vole_verifier(delta)
 
-        rhs: int = self.field.sub(
-            self.field.add(self.field.mul(d, delta), e),
-            b
-        )
+        rhs: int = self.field.sub(self.field.add(self.field.mul(d, delta), e), b)
 
         return lhs == rhs

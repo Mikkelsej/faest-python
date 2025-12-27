@@ -1,13 +1,15 @@
-import sys
 import os
-import pytest
 import random
+import sys
+
+import pytest
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from field import ExtensionField
-from vole import Vole
 from prover import Prover
 from verifier import Verifier
+from vole import Vole
 
 
 class TestPIT:
@@ -20,7 +22,7 @@ class TestPIT:
 
     def test_pit_field(self):
         for _ in range(1000):
-            row = [i for i in range(1, 10)] # 1..9
+            row = list(range(1, 10))  # 1..9
 
             # shuffle to create permutations
             random_row = row[:]
@@ -34,7 +36,9 @@ class TestPIT:
             # Do a polynomial identity test
             for i in range(9):
                 result_row = self.field.mul(result_row, self.field.sub(random_challenge, row[i]))
-                result_random_row = self.field.mul(result_random_row, self.field.sub(random_challenge, random_row[i]))
+                result_random_row = self.field.mul(
+                    result_random_row, self.field.sub(random_challenge, random_row[i])
+                )
 
             # if the difference is 0, then the polynomials are probably equal
             # if not, then the polynomials are definitely different
@@ -45,7 +49,7 @@ class TestPIT:
         passed_count = 0
         failed_count = 0
         for _ in range(1000):
-            row = [i for i in range(1, 10)] # 1..9
+            row = list(range(1, 10))  # 1..9
 
             # Create an invalid row by replacing one element with a duplicate
             # This ensures we have a different multiset
@@ -62,7 +66,9 @@ class TestPIT:
             # Do a polynomial identity test
             for i in range(9):
                 result_row = self.field.mul(result_row, self.field.sub(random_challenge, row[i]))
-                result_random_row = self.field.mul(result_random_row, self.field.sub(random_challenge, random_row[i]))
+                result_random_row = self.field.mul(
+                    result_random_row, self.field.sub(random_challenge, random_row[i])
+                )
 
             difference = result_random_row - result_row
             if difference != 0:
@@ -74,8 +80,3 @@ class TestPIT:
         # but can pass with probability 1/|field| when a challenge equals one of the roots
         # With 1000 iterations and field size 2^8 = 256, we expect 9/256 approximately 3% false positives
         assert failed_count > 950
-
-
-
-
-

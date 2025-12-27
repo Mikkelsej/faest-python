@@ -1,18 +1,18 @@
-import sys
 import os
+import sys
+
 import pytest
-import random
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from sudoku_validator import PITValidator
-from circuit import Check0Gate, PowGate, Wire, NumRecGate, MulGate
-from sudoku_circuit import SudokuCircuit
+from circuit import Check0Gate, MulGate, NumRecGate, PowGate, Wire
+from field import ExtensionField
 from prover import Prover
+from sudoku_circuit import SudokuCircuit
+from sudoku_generator import SudokuGenerator
+from sudoku_validator import PITValidator
 from verifier import Verifier
 from vole import Vole
-from field import ExtensionField
-from sudoku_generator import SudokuGenerator
 
 
 class TestSudokuCircuit:
@@ -141,7 +141,7 @@ class TestSudokuCircuit:
 
         circuit.commit_sudoku(solved_sudoku)
         result = circuit.is_valid()
-        assert result, f"Random sudoku #{iteration+1} failed validation"
+        assert result, f"Random sudoku #{iteration + 1} failed validation"
 
     def test_known_valid_sudoku_1(self):
         circuit = self.sudoku_circuit
@@ -154,7 +154,7 @@ class TestSudokuCircuit:
             [7, 1, 3, 9, 2, 4, 8, 5, 6],
             [9, 6, 1, 5, 3, 7, 2, 8, 4],
             [2, 8, 7, 4, 1, 9, 6, 3, 5],
-            [3, 4, 5, 2, 8, 6, 1, 7, 9]
+            [3, 4, 5, 2, 8, 6, 1, 7, 9],
         ]
 
         circuit.commit_sudoku(known_sudoku)
@@ -172,7 +172,7 @@ class TestSudokuCircuit:
             [8, 9, 1, 2, 3, 4, 5, 6, 7],
             [3, 4, 5, 6, 7, 8, 9, 1, 2],
             [6, 7, 8, 9, 1, 2, 3, 4, 5],
-            [9, 1, 2, 3, 4, 5, 6, 7, 8]
+            [9, 1, 2, 3, 4, 5, 6, 7, 8],
         ]
 
         circuit.commit_sudoku(known_sudoku)
@@ -190,7 +190,7 @@ class TestSudokuCircuit:
             [6, 1, 8, 9, 7, 2, 4, 3, 5],
             [7, 8, 6, 2, 3, 5, 9, 1, 4],
             [1, 5, 4, 7, 9, 6, 8, 2, 3],
-            [2, 3, 9, 8, 4, 1, 5, 6, 7]
+            [2, 3, 9, 8, 4, 1, 5, 6, 7],
         ]
 
         circuit.commit_sudoku(known_sudoku)

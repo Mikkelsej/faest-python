@@ -1,6 +1,7 @@
 """Circuit builder and constraints for Sudoku over VOLE-backed arithmetic."""
 
 from abc import ABC, abstractmethod
+
 from prover import Prover
 from verifier import Verifier
 
@@ -51,10 +52,8 @@ class MulGate(Gate):
         commitment_index = self.inputs[0].commitment_index
         for i in range(len(self.inputs) - 1):
             next_input_index = self.inputs[i + 1].commitment_index
-            result_idx, correction, d, e = self.prover.mul(
-                commitment_index, next_input_index
-            )
-            self.verifier.mul(commitment_index, next_input_index, correction)
+            result_idx, correction, d, e = self.prover.mul(commitment_index, next_input_index)
+            self.verifier.mul(correction)
             if not self.verifier.check_mul(commitment_index, next_input_index, result_idx, d, e):
                 raise Exception("Verification failed")
             commitment_index = result_idx

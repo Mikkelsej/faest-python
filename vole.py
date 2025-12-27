@@ -72,7 +72,7 @@ class Vole:
         # Note: for i >= vole_length, u[i] = 0 and v[i] = 0, so q[i] = 0
         q = [
             self.field.add(vi, self.field.mul(ui, delta))
-            for (vi, ui) in zip(self.v, self.u)
+            for (vi, ui) in zip(self.v, self.u, strict=True)
         ]
         verifier.set_q(q)
 
@@ -94,6 +94,7 @@ class Vole:
         b = self.field.add(self.a1, self.field.mul(self.a0, delta))
 
         return b
+
 
 if __name__ == "__main__":
     length: int = 1000

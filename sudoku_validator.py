@@ -1,7 +1,8 @@
 """Abstract validator interface and concrete implementations for Sudoku circuit validation."""
 
 from abc import ABC, abstractmethod
-from circuit import Wire, AddGate, PowGate, Check0Gate, MulGate
+
+from circuit import AddGate, Check0Gate, MulGate, PowGate, Wire
 
 
 class SudokuValidator(ABC):
@@ -121,7 +122,6 @@ class PITValidator(SudokuValidator):
 
         return result_wire
 
-
     def calculate_random_linear_combination(self, wires: list[Wire], circuit) -> Wire:
         """Compute a random linear combination of wires using powers of the challenge.
 
@@ -169,7 +169,6 @@ class PITValidator(SudokuValidator):
         return Wire(result_idx)
 
 
-
 class Check0Validator(SudokuValidator):
     """Check-zero validator."""
 
@@ -194,7 +193,11 @@ class Check0Validator(SudokuValidator):
         expected_square_value = 1
         expected_square_index = circuit.prover.add_constant(zero_index, expected_square_value)
         circuit.verifier.add_constant(zero_index, expected_square_value)
-        result_square_gate = AddGate([add_gate_square.evaluate(), Wire(expected_square_index)], circuit.prover, circuit.verifier)
+        result_square_gate = AddGate(
+            [add_gate_square.evaluate(), Wire(expected_square_index)],
+            circuit.prover,
+            circuit.verifier,
+        )
         result_square_wire = result_square_gate.evaluate()
 
         add_gate_cube = AddGate(cubed_wires, circuit.prover, circuit.verifier)
@@ -202,10 +205,14 @@ class Check0Validator(SudokuValidator):
         expected_cube_value = 73
         expected_cube_index = circuit.prover.add_constant(zero_index, expected_cube_value)
         circuit.verifier.add_constant(zero_index, expected_cube_value)
-        result_cube_gate = AddGate([add_gate_cube.evaluate(), Wire(expected_cube_index)], circuit.prover, circuit.verifier)
+        result_cube_gate = AddGate(
+            [add_gate_cube.evaluate(), Wire(expected_cube_index)], circuit.prover, circuit.verifier
+        )
         result_cube_wire = result_cube_gate.evaluate()
 
-        result_wire = Check0Gate([result_square_wire, result_cube_wire], circuit.prover, circuit.verifier).evaluate()
+        result_wire = Check0Gate(
+            [result_square_wire, result_cube_wire], circuit.prover, circuit.verifier
+        ).evaluate()
         return result_wire
 
     def is_valid(self, circuit) -> bool:
@@ -235,4 +242,3 @@ class Check0Validator(SudokuValidator):
             return False
 
         return result_wire.get_value(prover) == 0
-

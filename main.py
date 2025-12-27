@@ -4,7 +4,7 @@ from field import ExtensionField
 from prover import Prover
 from sudoku_circuit import SudokuCircuit
 from sudoku_generator import SudokuGenerator
-from sudoku_validator import Check0Validator, PITValidator
+from sudoku_validator import PITValidator
 from verifier import Verifier
 from vole import Vole
 

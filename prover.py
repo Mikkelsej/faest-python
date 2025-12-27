@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+
 from field import ExtensionField
 
 if TYPE_CHECKING:
@@ -50,7 +51,6 @@ class Prover:
         """
         self.v = v
 
-
     def commit(self, w: int) -> tuple[int, int]:
         """Commit to a value w at the current index
 
@@ -86,15 +86,15 @@ class Prover:
         """
         return index, self.u[index], self.v[index]
 
-    def add(self, a: int, b: int) -> int:
+    def add(self, index_a: int, index_b: int) -> int:
         """Add two committed values and return the result index
 
         Performs homomorphic addition: w[c] = w[a] + w[b]
         This is achieved by setting u[c] = u[a] + u[b] and v[c] = v[a] + v[b]
 
         Args:
-            a (int): index of the first value
-            b (int): index of the second value
+            index_a (int): index of the first value
+            index_b (int): index of the second value
 
         Returns:
             int: index c where the sum is stored
@@ -102,8 +102,8 @@ class Prover:
         c = self.temp_index
         self.temp_index += 1
 
-        self.v[c] = self.field.add(self.v[a], self.v[b])
-        self.u[c] = self.field.add(self.u[a], self.u[b])
+        self.v[c] = self.field.add(self.v[index_a], self.v[index_b])
+        self.u[c] = self.field.add(self.u[index_a], self.u[index_b])
 
         return c
 

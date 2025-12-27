@@ -60,7 +60,6 @@ class SudokuGenerator:
         return self.board
 
 
-
 if __name__ == "__main__":
     # use module-level generator when running as script
     generator = SudokuGenerator()

@@ -2,20 +2,21 @@ import random
 
 
 class ExtensionField:
-
     _irreducible = {
         3: 0b1011,
         8: 0b100011011,  # x^8 + x^4 + x^3 + x + 1
-        64: 0x1000000000000001B
+        64: 0x1000000000000001B,
     }
 
     def __init__(self, m: int) -> None:
         # p^m
-        self.p = 2
         self.m = m
-        if not m in [3, 8, 64, 128, 192, 256, 384, 576, 768]:
+        if m not in [3, 8, 64, 128, 192, 256, 384, 576, 768]:
             raise Exception(f"m must be one of {[8, 64, 128, 192, 256, 384, 576, 768]}")
-        self.irrPoly = self._irreducible[self.m]
+        self.irrPoly = self._get_irr_poly(m)
+
+    def _get_irr_poly(self, m: int) -> int:
+        return self._irreducible[m]
 
     def add(self, a: int, b: int) -> int:
         """Add two values
@@ -32,13 +33,13 @@ class ExtensionField:
     def sub(self, a: int, b: int) -> int:
         """Subtract two values
 
-         Args:
-             a (int): first value
-             b (int): second value
+        Args:
+            a (int): first value
+            b (int): second value
 
-         Returns:
-             a ^ b
-         """
+        Returns:
+            a ^ b
+        """
         return a ^ b
 
     def mul(self, a: int, b: int) -> int:
@@ -130,7 +131,7 @@ class ExtensionField:
         Returns:
             int: random value in range [0, 2^m - 1]
         """
-        return random.randint(0, 2 ** self.m - 1)
+        return random.randint(0, 2**self.m - 1)
 
     def get_random_bit(self) -> int:
         """Generate a random bit
